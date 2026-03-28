@@ -1,0 +1,1318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Detective</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Courier+Prime:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1512;
+    --paper: #f2ead8;
+    --aged: #e8dcc4;
+    --crease: #c9b99a;
+    --red: #8b1a1a;
+    --gold: #a07a30;
+    --smoke: #6b5f52;
+    --dim: #9e8e7e;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--ink);
+    font-family: 'Courier Prime', monospace;
+    color: var(--paper);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 999;
+    opacity: 0.4;
+  }
+
+  .screen { width: 100%; max-width: 780px; padding: 40px 24px; display: none; }
+  .screen.active { display: block; }
+  #screen-intro.active { display: flex; }
+  #screen-game.active { display: flex; }
+
+  /* ===== INTRO ===== */
+  #screen-intro {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    text-align: center;
+    gap: 32px;
+  }
+
+  .masthead {
+    border-top: 2px solid var(--crease);
+    border-bottom: 2px solid var(--crease);
+    padding: 8px 0;
+    width: 100%;
+    max-width: 500px;
+  }
+
+  .masthead-label {
+    font-family: 'Courier Prime', monospace;
+    font-size: 10px;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: var(--dim);
+    margin-bottom: 6px;
+  }
+
+  h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(52px, 10vw, 88px);
+    font-weight: 700;
+    line-height: 0.9;
+    color: var(--paper);
+    letter-spacing: -2px;
+  }
+
+  h1 span { color: var(--red); font-style: italic; }
+
+  .intro-sub {
+    font-size: 12px;
+    letter-spacing: 0.2em;
+    color: var(--dim);
+    text-transform: uppercase;
+  }
+
+  .btn {
+    background: none;
+    border: 1px solid var(--crease);
+    color: var(--paper);
+    font-family: 'Courier Prime', monospace;
+    font-size: 13px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 14px 40px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+  }
+
+  .btn:hover { background: var(--paper); color: var(--ink); border-color: var(--paper); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-danger { border-color: var(--red); color: var(--red); }
+  .btn-danger:hover { background: var(--red); color: var(--paper); border-color: var(--red); }
+
+  .loading-text {
+    font-size: 12px;
+    color: var(--dim);
+    letter-spacing: 0.15em;
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  /* ===== CASE BRIEF ===== */
+  #screen-brief { animation: fadeIn 0.4s ease; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+
+  .case-file {
+    background: var(--paper);
+    color: var(--ink);
+    padding: 40px;
+    position: relative;
+    box-shadow: 4px 4px 0 var(--crease), 8px 8px 0 rgba(0,0,0,0.3);
+  }
+
+  .case-file::before {
+    content: 'CASE FILE';
+    position: absolute;
+    top: 16px; right: 20px;
+    font-size: 9px;
+    letter-spacing: 0.3em;
+    color: var(--dim);
+  }
+
+  .stamp {
+    display: inline-block;
+    border: 3px solid var(--red);
+    color: var(--red);
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    transform: rotate(-2deg);
+    margin-bottom: 20px;
+  }
+
+  .case-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1.1;
+    margin-bottom: 20px;
+    color: var(--ink);
+  }
+
+  .case-meta {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 24px;
+    padding: 16px;
+    background: var(--aged);
+    font-size: 12px;
+  }
+
+  .case-meta-item label {
+    display: block;
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--smoke);
+    margin-bottom: 2px;
+  }
+
+  .case-meta-item span { font-weight: 700; }
+
+  .pre-story {
+    font-size: 14px;
+    line-height: 1.75;
+    color: var(--ink);
+    border-left: 3px solid var(--crease);
+    padding-left: 16px;
+    margin-bottom: 24px;
+    font-style: italic;
+  }
+
+  .suspects-heading {
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--smoke);
+    margin-bottom: 12px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--crease);
+  }
+
+  .suspect-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 28px;
+  }
+
+  .suspect-card {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    padding: 10px 12px;
+    background: var(--aged);
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: border-color 0.15s;
+  }
+
+  .suspect-card:hover { border-color: var(--crease); }
+  .suspect-card.active { border-color: var(--ink); background: var(--ink); color: var(--paper); }
+  .suspect-card.active .suspect-role { color: var(--dim); }
+
+  .suspect-number {
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    color: var(--smoke);
+    min-width: 20px;
+  }
+
+  .suspect-card.active .suspect-number { color: var(--dim); }
+
+  .suspect-name { font-weight: 700; font-size: 14px; }
+  .suspect-role { font-size: 12px; color: var(--smoke); margin-left: auto; }
+
+  /* ===== GAME ===== */
+  #screen-game {
+    display: none;
+    flex-direction: column;
+    min-height: 100vh;
+    padding: 0;
+    max-width: 780px;
+  }
+
+  #screen-game.active { display: flex; }
+
+  .game-header {
+    border-bottom: 1px solid #2a2320;
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    position: sticky;
+    top: 0;
+    background: var(--ink);
+    z-index: 10;
+  }
+
+  .game-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 16px;
+    font-style: italic;
+    color: var(--paper);
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .player-badge {
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    color: var(--dim);
+    text-transform: uppercase;
+  }
+
+  /* Suspect tabs */
+  .suspect-tabs {
+    display: flex;
+    border-bottom: 1px solid #2a2320;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .suspect-tabs::-webkit-scrollbar { display: none; }
+
+  .suspect-tab {
+    padding: 12px 20px;
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--dim);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+    transition: all 0.15s;
+    background: none;
+    border-left: none; border-right: none; border-top: none;
+    font-family: 'Courier Prime', monospace;
+  }
+
+  .suspect-tab:hover { color: var(--paper); }
+  .suspect-tab.active { color: var(--paper); border-bottom-color: var(--gold); }
+
+  /* Transcript */
+  .transcript {
+    flex: 1;
+    padding: 24px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-height: 300px;
+    max-height: calc(100vh - 280px);
+  }
+
+  .transcript:empty::after {
+    content: 'No conversation yet. Ask a question or make an accusation.';
+    color: var(--smoke);
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    font-style: italic;
+    text-align: center;
+    margin: auto;
+  }
+
+  .msg {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    animation: fadeIn 0.25s ease;
+  }
+
+  .msg-label {
+    font-size: 9px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--smoke);
+  }
+
+  .msg-bubble {
+    padding: 12px 16px;
+    font-size: 14px;
+    line-height: 1.65;
+    max-width: 85%;
+  }
+
+  .msg.player { align-items: flex-end; }
+  .msg.player .msg-bubble {
+    background: #2a2320;
+    color: var(--paper);
+    border: 1px solid #3a3330;
+  }
+
+  .msg.suspect .msg-bubble {
+    background: var(--paper);
+    color: var(--ink);
+    border: none;
+  }
+
+  .msg.accuse .msg-bubble {
+    background: #3a1515;
+    border: 1px solid var(--red);
+    color: #f0c0c0;
+  }
+
+  .msg.hint .msg-bubble {
+    background: #1a2230;
+    border: 1px solid #304060;
+    color: #a0c0e0;
+    font-style: italic;
+    max-width: 100%;
+  }
+
+  .msg.system .msg-bubble {
+    background: #1a2a1a;
+    border: 1px solid #304030;
+    color: #90c090;
+    max-width: 100%;
+    font-size: 13px;
+  }
+
+  /* Input area */
+  .input-area {
+    border-top: 1px solid #2a2320;
+    padding: 16px 24px;
+    background: var(--ink);
+  }
+
+  .suspect-selector {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+    font-size: 11px;
+    color: var(--dim);
+    letter-spacing: 0.1em;
+  }
+
+  .suspect-selector select {
+    background: #2a2320;
+    border: 1px solid #3a3330;
+    color: var(--paper);
+    font-family: 'Courier Prime', monospace;
+    font-size: 12px;
+    padding: 4px 8px;
+    flex: 1;
+    cursor: pointer;
+  }
+
+  .input-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  .msg-input {
+    flex: 1;
+    background: #2a2320;
+    border: 1px solid #3a3330;
+    color: var(--paper);
+    font-family: 'Courier Prime', monospace;
+    font-size: 13px;
+    padding: 10px 14px;
+    resize: none;
+    outline: none;
+    transition: border-color 0.15s;
+    min-height: 44px;
+    max-height: 100px;
+  }
+
+  .msg-input:focus { border-color: var(--crease); }
+
+  .send-btn {
+    padding: 10px 20px;
+    background: none;
+    border: 1px solid var(--crease);
+    color: var(--paper);
+    font-family: 'Courier Prime', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.15s;
+    align-self: flex-end;
+    height: 44px;
+  }
+
+  .send-btn:hover { background: var(--paper); color: var(--ink); }
+  .send-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  .action-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .action-btn {
+    background: none;
+    border: 1px solid #3a3330;
+    color: var(--dim);
+    font-family: 'Courier Prime', monospace;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 6px 14px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .action-btn:hover { color: var(--paper); border-color: var(--crease); }
+  .action-btn.accuse-btn { color: #c05050; border-color: #5a2020; }
+  .action-btn.accuse-btn:hover { background: var(--red); color: var(--paper); border-color: var(--red); }
+  .action-btn.case-btn { color: var(--gold); border-color: #4a3a10; }
+  .action-btn.case-btn:hover { background: var(--gold); color: var(--ink); border-color: var(--gold); }
+
+  /* ===== CASE FILE DRAWER ===== */
+  .case-drawer-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(10, 8, 6, 0.75);
+    z-index: 60;
+    animation: fadeIn 0.2s ease;
+  }
+
+  .case-drawer-overlay.open {
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-end;
+  }
+
+  .case-drawer {
+    width: min(520px, 95vw);
+    height: 100vh;
+    background: var(--paper);
+    color: var(--ink);
+    overflow-y: auto;
+    animation: slideIn 0.25s ease;
+    position: relative;
+    box-shadow: -8px 0 40px rgba(0,0,0,0.5);
+  }
+
+  @keyframes slideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+
+  .case-drawer-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--crease);
+    position: sticky;
+    top: 0;
+    background: var(--paper);
+    z-index: 1;
+  }
+
+  .case-drawer-label {
+    font-size: 9px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--smoke);
+  }
+
+  .close-drawer-btn {
+    background: none;
+    border: 1px solid var(--crease);
+    color: var(--smoke);
+    font-family: 'Courier Prime', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 5px 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .close-drawer-btn:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+
+  .case-drawer-body {
+    padding: 24px 28px;
+  }
+
+  .case-drawer-body .case-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: 16px;
+    color: var(--ink);
+  }
+
+  .case-drawer-body .case-meta {
+    grid-template-columns: 1fr 1fr;
+    margin-bottom: 20px;
+    font-size: 12px;
+  }
+
+  .case-drawer-body .pre-story {
+    font-size: 13px;
+    margin-bottom: 20px;
+  }
+
+  .case-drawer-body .suspects-heading {
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--smoke);
+    margin-bottom: 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--crease);
+  }
+
+  .case-drawer-body .suspect-cards {
+    margin-bottom: 0;
+  }
+
+  .case-drawer-body .suspect-card {
+    cursor: default;
+  }
+
+  /* ===== SOLVED OVERLAY ===== */
+  .solved-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(10,8,6,0.92);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    display: none;
+    animation: fadeIn 0.4s ease;
+  }
+
+  .solved-overlay.show { display: flex; }
+
+  .solved-card {
+    background: var(--paper);
+    color: var(--ink);
+    padding: 48px;
+    max-width: 460px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 0 60px rgba(0,0,0,0.8);
+  }
+
+  .solved-stamp {
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--smoke);
+    margin-bottom: 12px;
+  }
+
+  .solved-headline {
+    font-family: 'Playfair Display', serif;
+    font-size: 36px;
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 24px;
+  }
+
+  .solved-detail {
+    font-size: 13px;
+    line-height: 1.7;
+    margin-bottom: 8px;
+    text-align: left;
+  }
+
+  .solved-detail strong {
+    display: inline-block;
+    width: 70px;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--smoke);
+  }
+
+  .solved-card hr {
+    border: none;
+    border-top: 1px solid var(--crease);
+    margin: 20px 0;
+  }
+
+  .spinner {
+    display: inline-block;
+    width: 12px; height: 12px;
+    border: 1px solid var(--crease);
+    border-top-color: var(--paper);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    vertical-align: middle;
+    margin-right: 6px;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .error-msg {
+    color: #c05050;
+    font-size: 12px;
+    letter-spacing: 0.1em;
+  }
+
+  /* ===== SETTINGS ===== */
+  .settings-panel {
+    width: 100%;
+    max-width: 500px;
+    background: #211c18;
+    border: 1px solid #3a3330;
+    padding: 24px;
+    margin-bottom: 8px;
+  }
+
+  .settings-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+
+  .setting-group { display: flex; flex-direction: column; gap: 10px; }
+
+  .setting-label {
+    font-size: 9px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--dim);
+  }
+
+  .setting-options {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .lang-options { gap: 6px; }
+
+  .opt-btn {
+    background: none;
+    border: 1px solid #3a3330;
+    color: var(--dim);
+    font-family: 'Courier Prime', monospace;
+    font-size: 12px;
+    padding: 6px 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.05em;
+  }
+
+  .opt-btn:hover { color: var(--paper); border-color: var(--crease); }
+  .opt-btn.active { background: var(--paper); color: var(--ink); border-color: var(--paper); }
+</style>
+</head>
+<body>
+
+<!-- INTRO -->
+<div id="screen-intro" class="screen active">
+  <div class="masthead">
+    <div class="masthead-label">An interactive mystery</div>
+  </div>
+  <div>
+    <h1>The<br><span>Detective</span></h1>
+  </div>
+  <p class="intro-sub">Question suspects. Find the truth.</p>
+
+  <div class="settings-panel">
+    <div class="settings-row">
+      <div class="setting-group">
+        <div class="setting-label">Suspects</div>
+        <div class="setting-options" id="opt-players">
+          <button class="opt-btn" data-val="2" onclick="setOpt('players',2,this)">2</button>
+          <button class="opt-btn active" data-val="3" onclick="setOpt('players',3,this)">3</button>
+          <button class="opt-btn" data-val="4" onclick="setOpt('players',4,this)">4</button>
+          <button class="opt-btn" data-val="5" onclick="setOpt('players',5,this)">5</button>
+        </div>
+      </div>
+      <div class="setting-group">
+        <div class="setting-label">Difficulty</div>
+        <div class="setting-options" id="opt-difficulty">
+          <button class="opt-btn" data-val="easy" onclick="setOpt('difficulty','easy',this)">Easy</button>
+          <button class="opt-btn active" data-val="normal" onclick="setOpt('difficulty','normal',this)">Normal</button>
+          <button class="opt-btn" data-val="hard" onclick="setOpt('difficulty','hard',this)">Hard</button>
+        </div>
+      </div>
+    </div>
+    <div class="setting-group" style="margin-top:16px;">
+      <div class="setting-label">Language</div>
+      <div class="setting-options lang-options" id="opt-language">
+        <button class="opt-btn active" data-val="English" onclick="setOpt('language','English',this)">English</button>
+        <button class="opt-btn" data-val="French" onclick="setOpt('language','French',this)">Français</button>
+        <button class="opt-btn" data-val="Spanish" onclick="setOpt('language','Spanish',this)">Español</button>
+        <button class="opt-btn" data-val="German" onclick="setOpt('language','German',this)">Deutsch</button>
+        <button class="opt-btn" data-val="Italian" onclick="setOpt('language','Italian',this)">Italiano</button>
+        <button class="opt-btn" data-val="Portuguese" onclick="setOpt('language','Portuguese',this)">Português</button>
+        <button class="opt-btn" data-val="Japanese" onclick="setOpt('language','Japanese',this)">日本語</button>
+        <button class="opt-btn" data-val="Chinese" onclick="setOpt('language','Chinese',this)">中文</button>
+        <button class="opt-btn" data-val="Vietnamese" onclick="setOpt('language','Vietnamese',this)">Tiếng Việt</button>
+      </div>
+    </div>
+  </div>
+
+  <button class="btn" id="btn-start" onclick="startGame()">Begin Investigation</button>
+  <p class="loading-text" id="loading-intro" style="display:none"><span class="spinner"></span>Generating your case&hellip;</p>
+  <p class="error-msg" id="intro-error"></p>
+</div>
+
+<!-- BRIEF -->
+<div id="screen-brief" class="screen">
+  <div class="case-file">
+    <div class="stamp">Confidential</div>
+    <div class="case-title" id="brief-title"></div>
+
+    <div class="case-meta">
+      <div class="case-meta-item">
+        <label>Detective</label>
+        <span id="brief-detective"></span>
+      </div>
+      <div class="case-meta-item">
+        <label>Victim</label>
+        <span id="brief-victim"></span>
+      </div>
+      <div class="case-meta-item">
+        <label>Crime</label>
+        <span id="brief-crime"></span>
+      </div>
+      <div class="case-meta-item">
+        <label>Setting</label>
+        <span id="brief-setting"></span>
+      </div>
+      <div class="case-meta-item">
+        <label>Difficulty</label>
+        <span id="brief-difficulty"></span>
+      </div>
+      <div class="case-meta-item">
+        <label>Language</label>
+        <span id="brief-language"></span>
+      </div>
+    </div>
+
+    <div class="pre-story" id="brief-prestory"></div>
+
+    <div class="suspects-heading">Persons of Interest</div>
+    <div class="suspect-cards" id="brief-suspects"></div>
+
+    <div style="display:flex;gap:10px;">
+      <button class="btn" onclick="enterGame()" style="flex:1">Begin Questioning</button>
+    </div>
+  </div>
+</div>
+
+<!-- GAME -->
+<div id="screen-game" class="screen">
+  <div class="game-header">
+    <div class="game-title" id="game-title"></div>
+    <div class="player-badge">Det. <span id="game-detective"></span></div>
+    <button class="action-btn" onclick="confirmNewGame()" style="margin-left:12px;white-space:nowrap;">↺ New Game</button>
+  </div>
+
+  <div class="suspect-tabs" id="suspect-tabs"></div>
+
+  <div class="transcript" id="transcript"></div>
+
+  <div class="input-area">
+    <div class="suspect-selector">
+      <span>Speaking to:</span>
+      <select id="suspect-select" onchange="switchSuspect(this.value)"></select>
+    </div>
+    <div class="input-row">
+      <textarea class="msg-input" id="msg-input" placeholder="Ask a question…" rows="1"
+        onkeydown="handleKey(event)"></textarea>
+      <button class="send-btn" id="send-btn" onclick="sendTalk()">Ask</button>
+    </div>
+    <div class="action-row">
+      <button class="action-btn accuse-btn" onclick="openAccuse()">⚖ Accuse</button>
+      <button class="action-btn case-btn" onclick="openCaseDrawer()">📁 Case File</button>
+      <button class="action-btn" onclick="getHint()">💡 Hint</button>
+      <button class="action-btn" onclick="giveUp()">✗ Give Up</button>
+    </div>
+    <p class="error-msg" id="game-error"></p>
+  </div>
+</div>
+
+<!-- CASE FILE DRAWER -->
+<div class="case-drawer-overlay" id="case-drawer-overlay" onclick="handleDrawerOverlayClick(event)">
+  <div class="case-drawer" id="case-drawer">
+    <div class="case-drawer-header">
+      <div class="case-drawer-label">Case File — Reference</div>
+      <button class="close-drawer-btn" onclick="closeCaseDrawer()">✕ Close</button>
+    </div>
+    <div class="case-drawer-body">
+      <div class="stamp">Confidential</div>
+      <div class="case-title" id="drawer-title"></div>
+      <div class="case-meta" id="drawer-meta"></div>
+      <div class="pre-story" id="drawer-prestory"></div>
+      <div class="suspects-heading">Persons of Interest</div>
+      <div class="suspect-cards" id="drawer-suspects"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ACCUSE MODAL -->
+<div id="accuse-panel" style="display:none; position:fixed; inset:0; background:rgba(10,8,6,0.88); z-index:50; align-items:center; justify-content:center;">
+  <div style="background:var(--paper);color:var(--ink);padding:36px;max-width:460px;width:90%;box-shadow:0 0 40px rgba(0,0,0,0.7);">
+    <div style="font-size:10px;letter-spacing:0.25em;text-transform:uppercase;color:var(--smoke);margin-bottom:8px;">Formal Accusation</div>
+    <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;margin-bottom:20px;">Make Your Charge</div>
+    <div style="font-size:12px;color:var(--smoke);margin-bottom:8px;letter-spacing:0.1em;text-transform:uppercase;">Accusing:</div>
+    <select id="accuse-select" style="width:100%;background:var(--aged);border:1px solid var(--crease);font-family:'Courier Prime',monospace;font-size:13px;padding:8px;margin-bottom:16px;color:var(--ink);cursor:pointer;"></select>
+    <div style="font-size:12px;color:var(--smoke);margin-bottom:8px;letter-spacing:0.1em;text-transform:uppercase;">Your argument:</div>
+    <textarea id="accuse-input" style="width:100%;background:var(--aged);border:1px solid var(--crease);font-family:'Courier Prime',monospace;font-size:13px;padding:10px;min-height:80px;color:var(--ink);resize:none;outline:none;" placeholder="State your case — motive, method, evidence…"></textarea>
+    <div style="display:flex;gap:8px;margin-top:16px;">
+      <button class="btn btn-danger" onclick="submitAccusation()" style="flex:1">Accuse</button>
+      <button class="btn" onclick="closeAccuse()" style="flex:1">Cancel</button>
+    </div>
+    <p class="error-msg" id="accuse-error"></p>
+  </div>
+</div>
+
+<!-- SOLVED OVERLAY -->
+<div class="solved-overlay" id="solved-overlay">
+  <div class="solved-card">
+    <div class="solved-stamp" id="solved-stamp">Case Closed</div>
+    <div class="solved-headline" id="solved-headline">Solved.</div>
+    <hr>
+    <div class="solved-detail"><strong>Culprit</strong> <span id="sol-culprit"></span></div>
+    <div class="solved-detail"><strong>Motive</strong> <span id="sol-motive"></span></div>
+    <div class="solved-detail"><strong>Method</strong> <span id="sol-method"></span></div>
+    <hr>
+    <button class="btn" onclick="newGame()" style="margin-top:8px;width:100%">New Case</button>
+  </div>
+</div>
+
+<script>
+const API = 'http://localhost:5000/api';
+
+let sessionId = null;
+let playerName = null;
+let suspects = [];
+let currentSuspect = null;
+let transcripts = {};
+let caseData = {};
+
+const settings = { players: 3, difficulty: 'normal', language: 'English' };
+
+function setOpt(key, val, btn) {
+  settings[key] = val;
+  const group = btn.closest('.setting-options');
+  group.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// ===== CASE FILE DRAWER =====
+function openCaseDrawer() {
+  populateDrawer();
+  document.getElementById('case-drawer-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeCaseDrawer() {
+  document.getElementById('case-drawer-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function handleDrawerOverlayClick(e) {
+  if (e.target === document.getElementById('case-drawer-overlay')) {
+    closeCaseDrawer();
+  }
+}
+
+function populateDrawer() {
+  document.getElementById('drawer-title').textContent = caseData.title || '';
+  document.getElementById('drawer-prestory').textContent = caseData.pre_story || '';
+
+  const metaEl = document.getElementById('drawer-meta');
+  const diffMap = { easy: '🟢 Easy', normal: '🟡 Normal', hard: '🔴 Hard' };
+  metaEl.innerHTML = [
+    { label: 'Detective', val: caseData.player_name },
+    { label: 'Victim', val: caseData.victim },
+    { label: 'Crime', val: caseData.crime },
+    { label: 'Setting', val: caseData.setting },
+    { label: 'Difficulty', val: diffMap[settings.difficulty] || settings.difficulty },
+    { label: 'Language', val: settings.language },
+  ].map(m => `
+    <div class="case-meta-item">
+      <label>${m.label}</label>
+      <span>${m.val || ''}</span>
+    </div>
+  `).join('');
+
+  const susEl = document.getElementById('drawer-suspects');
+  susEl.innerHTML = '';
+  (caseData.suspects || []).forEach((s, i) => {
+    const el = document.createElement('div');
+    el.className = 'suspect-card';
+    el.innerHTML = `<span class="suspect-number">${String(i+1).padStart(2,'0')}</span><span class="suspect-name">${s.name}</span><span class="suspect-role">${s.role}</span>`;
+    susEl.appendChild(el);
+  });
+}
+
+// ===== GAME FLOW =====
+function newGame() {
+  sessionId = null;
+  playerName = null;
+  suspects = [];
+  currentSuspect = null;
+  transcripts = {};
+  caseData = {};
+  closeCaseDrawer();
+  document.getElementById('solved-overlay').classList.remove('show');
+  document.getElementById('transcript').innerHTML = '';
+  document.getElementById('msg-input').value = '';
+  clearError('game-error');
+  clearError('intro-error');
+  document.getElementById('btn-start').disabled = false;
+  document.getElementById('loading-intro').style.display = 'none';
+  showScreen('screen-intro');
+}
+
+function confirmNewGame() {
+  if (confirm('Abandon this case and start a new one?')) newGame();
+}
+
+async function withRetry(fn, maxAttempts, onAttempt) {
+  let lastErr;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      onAttempt(attempt, null);
+      return await fn();
+    } catch (e) {
+      lastErr = e;
+      onAttempt(attempt, e.message);
+      if (attempt < maxAttempts) await new Promise(r => setTimeout(r, 800));
+    }
+  }
+  throw lastErr;
+}
+
+async function startGame() {
+  document.getElementById('btn-start').disabled = true;
+  document.getElementById('loading-intro').style.display = 'block';
+  document.getElementById('intro-error').textContent = '';
+
+  try {
+    const data = await withRetry(
+      async () => {
+        const res = await fetch(`${API}/new_game`, {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ n_players: settings.players, difficulty: settings.difficulty, language: settings.language })
+        });
+        const d = await res.json();
+        if (d.error) throw new Error(d.error);
+        return d;
+      },
+      3,
+      (attempt, err) => {
+        if (err) {
+          document.getElementById('intro-error').textContent =
+            `Attempt ${attempt-1}/3 failed: ${err} — retrying…`;
+        } else if (attempt > 1) {
+          document.getElementById('intro-error').textContent =
+            `Retrying… (attempt ${attempt}/3)`;
+        }
+      }
+    );
+
+    document.getElementById('intro-error').textContent = '';
+    sessionId = data.session_id;
+    playerName = data.player_name;
+    suspects = data.suspects;
+    suspects.forEach(s => transcripts[s.name] = []);
+
+    // Store case data for the drawer
+    caseData = {
+      title: data.title,
+      player_name: data.player_name,
+      victim: data.victim,
+      crime: data.crime,
+      setting: data.setting,
+      pre_story: data.pre_story,
+      suspects: data.suspects,
+    };
+
+    document.getElementById('brief-title').textContent = data.title;
+    document.getElementById('brief-detective').textContent = data.player_name;
+    document.getElementById('brief-victim').textContent = data.victim;
+    document.getElementById('brief-crime').textContent = data.crime;
+    document.getElementById('brief-setting').textContent = data.setting;
+    document.getElementById('brief-prestory').textContent = data.pre_story;
+
+    const diffMap = { easy: '🟢 Easy', normal: '🟡 Normal', hard: '🔴 Hard' };
+    document.getElementById('brief-difficulty').textContent = diffMap[settings.difficulty] || settings.difficulty;
+    document.getElementById('brief-language').textContent = settings.language;
+
+    const cards = document.getElementById('brief-suspects');
+    cards.innerHTML = '';
+    suspects.forEach((s, i) => {
+      const el = document.createElement('div');
+      el.className = 'suspect-card';
+      el.innerHTML = `<span class="suspect-number">${String(i+1).padStart(2,'0')}</span><span class="suspect-name">${s.name}</span><span class="suspect-role">${s.role}</span>`;
+      cards.appendChild(el);
+    });
+
+    showScreen('screen-brief');
+  } catch (e) {
+    document.getElementById('intro-error').textContent = `Failed after 3 attempts: ${e.message}`;
+    document.getElementById('btn-start').disabled = false;
+  }
+  document.getElementById('loading-intro').style.display = 'none';
+}
+
+function enterGame() {
+  document.getElementById('game-title').textContent = document.getElementById('brief-title').textContent;
+  document.getElementById('game-detective').textContent = playerName;
+
+  const tabs = document.getElementById('suspect-tabs');
+  const sel = document.getElementById('suspect-select');
+  const accuseSel = document.getElementById('accuse-select');
+  tabs.innerHTML = ''; sel.innerHTML = ''; accuseSel.innerHTML = '';
+
+  suspects.forEach(s => {
+    const tab = document.createElement('button');
+    tab.className = 'suspect-tab';
+    tab.textContent = s.name;
+    tab.dataset.name = s.name;
+    tab.onclick = () => switchSuspect(s.name);
+    tabs.appendChild(tab);
+
+    const opt = document.createElement('option');
+    opt.value = s.name; opt.textContent = `${s.name} — ${s.role}`;
+    sel.appendChild(opt);
+
+    const aopt = opt.cloneNode(true);
+    accuseSel.appendChild(aopt);
+  });
+
+  currentSuspect = suspects[0].name;
+  switchSuspect(currentSuspect);
+  showScreen('screen-game');
+}
+
+function switchSuspect(name) {
+  currentSuspect = name;
+  document.getElementById('suspect-select').value = name;
+
+  document.querySelectorAll('.suspect-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.name === name);
+  });
+
+  renderTranscript();
+}
+
+function renderTranscript() {
+  const box = document.getElementById('transcript');
+  const msgs = transcripts[currentSuspect] || [];
+  box.innerHTML = '';
+  msgs.forEach(m => box.appendChild(buildMsgEl(m)));
+  box.scrollTop = box.scrollHeight;
+}
+
+function buildMsgEl({ role, text, type }) {
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+  const label = document.createElement('div');
+  label.className = 'msg-label';
+  label.textContent = role === 'player' ? `Det. ${playerName}` : currentSuspect;
+  if (role === 'hint') { label.textContent = 'HINT'; div.className = 'msg hint'; }
+  if (role === 'system') { label.textContent = 'CASE FILE'; div.className = 'msg system'; }
+  const bubble = document.createElement('div');
+  bubble.className = 'msg-bubble';
+  if (type === 'accuse' && role === 'player') { div.className = 'msg player accuse'; }
+  bubble.textContent = text;
+  div.appendChild(label);
+  div.appendChild(bubble);
+  return div;
+}
+
+function addMsg(suspectName, role, text, type) {
+  const saved = currentSuspect;
+  currentSuspect = suspectName;
+  if (!transcripts[suspectName]) transcripts[suspectName] = [];
+  transcripts[suspectName].push({ role, text, type });
+  if (saved === suspectName) {
+    const box = document.getElementById('transcript');
+    box.appendChild(buildMsgEl({ role, text, type }));
+    box.scrollTop = box.scrollHeight;
+  }
+  currentSuspect = saved;
+}
+
+// ===== ACTIONS =====
+async function sendTalk() {
+  const input = document.getElementById('msg-input');
+  const msg = input.value.trim();
+  if (!msg) return;
+  input.value = '';
+  setLoading(true);
+  clearError('game-error');
+
+  addMsg(currentSuspect, 'player', msg, 'talk');
+
+  const suspect = currentSuspect;
+  try {
+    const data = await withRetry(
+      async () => {
+        const res = await fetch(`${API}/talk`, {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ session_id: sessionId, suspect_name: suspect, message: msg })
+        });
+        const d = await res.json();
+        if (d.error) throw new Error(d.error);
+        return d;
+      },
+      3,
+      (attempt, err) => {
+        if (err) showError('game-error', `Attempt ${attempt-1}/3 failed: ${err} — retrying…`);
+        else if (attempt > 1) showError('game-error', `Retrying… (${attempt}/3)`);
+      }
+    );
+    clearError('game-error');
+    addMsg(suspect, 'suspect', data.reply, 'talk');
+  } catch (e) {
+    showError('game-error', `Failed after 3 attempts: ${e.message}`);
+  }
+  setLoading(false);
+}
+
+function openAccuse() {
+  document.getElementById('accuse-select').value = currentSuspect;
+  document.getElementById('accuse-input').value = '';
+  document.getElementById('accuse-error').textContent = '';
+  document.getElementById('accuse-panel').style.display = 'flex';
+}
+
+function closeAccuse() {
+  document.getElementById('accuse-panel').style.display = 'none';
+}
+
+async function submitAccusation() {
+  const name = document.getElementById('accuse-select').value;
+  const arg = document.getElementById('accuse-input').value.trim();
+  if (!arg) { showError('accuse-error', 'State your argument.'); return; }
+
+  closeAccuse();
+  setLoading(true);
+
+  switchSuspect(name);
+  addMsg(name, 'player', `I accuse you: ${arg}`, 'accuse');
+
+  try {
+    const data = await withRetry(
+      async () => {
+        const res = await fetch(`${API}/accuse`, {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ session_id: sessionId, suspect_name: name, argument: arg })
+        });
+        const d = await res.json();
+        if (d.error) throw new Error(d.error);
+        return d;
+      },
+      3,
+      (attempt, err) => {
+        if (err) showError('game-error', `Attempt ${attempt-1}/3 failed: ${err} — retrying…`);
+        else if (attempt > 1) showError('game-error', `Retrying… (${attempt}/3)`);
+      }
+    );
+    clearError('game-error');
+    addMsg(name, 'suspect', data.reply, 'accuse');
+    if (data.solved) showSolved(data.solution, true);
+  } catch (e) {
+    showError('game-error', `Failed after 3 attempts: ${e.message}`);
+  }
+  setLoading(false);
+}
+
+async function getHint() {
+  try {
+    const data = await withRetry(
+      async () => {
+        const res = await fetch(`${API}/hint`, {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ session_id: sessionId })
+        });
+        const d = await res.json();
+        if (d.error) throw new Error(d.error);
+        return d;
+      },
+      3,
+      (attempt, err) => {
+        if (err) showError('game-error', `Hint attempt ${attempt-1}/3 failed: ${err} — retrying…`);
+      }
+    );
+    clearError('game-error');
+    addMsg(currentSuspect, 'hint', data.hint, 'hint');
+  } catch (e) {
+    showError('game-error', `Failed after 3 attempts: ${e.message}`);
+  }
+}
+
+async function giveUp() {
+  if (!confirm('Give up and reveal the solution?')) return;
+  try {
+    const res = await fetch(`${API}/give_up`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ session_id: sessionId })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    showSolved(data.solution, false);
+  } catch (e) {
+    showError('game-error', e.message);
+  }
+}
+
+function showSolved(solution, won) {
+  document.getElementById('solved-stamp').textContent = won ? 'Case Closed' : 'You Gave Up';
+  document.getElementById('solved-headline').textContent = won ? 'Solved.' : 'The Truth.';
+  document.getElementById('sol-culprit').textContent = solution.culprit;
+  document.getElementById('sol-motive').textContent = solution.motive;
+  document.getElementById('sol-method').textContent = solution.method;
+  document.getElementById('solved-overlay').classList.add('show');
+}
+
+// ===== UTILS =====
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function setLoading(on) {
+  document.getElementById('send-btn').disabled = on;
+}
+
+function showError(id, msg) {
+  document.getElementById(id).textContent = msg;
+}
+
+function clearError(id) {
+  document.getElementById(id).textContent = '';
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendTalk();
+  }
+}
+</script>
+</body>
+</html>
