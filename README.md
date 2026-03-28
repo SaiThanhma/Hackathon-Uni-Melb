@@ -60,6 +60,7 @@ python server.py
 
 ### 4. Open the game in your browser
 http://127.0.0.1:5000
+
 ## How the Game Works
 
 When a new game starts, the backend asks an AI model to generate a full detective case in JSON format. The generated case includes the setting, victim, crime, suspect list, and hidden solution. The backend validates that the case is complete and makes sure exactly one suspect is guilty.
