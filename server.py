@@ -499,10 +499,17 @@ def give_up():
     solution = session["case_data"]["solution"]
     return jsonify({"solution": solution})
 
-
 @app.route("/")
 def index():
     return send_from_directory(".", "index.html")
+
+@app.route("/styles.css")
+def styles():
+    return send_from_directory(".", "styles.css")
+
+@app.route("/script.js")
+def script():
+    return send_from_directory(".", "script.js")
 
 
 if __name__ == "__main__":
