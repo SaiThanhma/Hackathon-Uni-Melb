@@ -64,90 +64,112 @@
 
 <!-- BRIEF -->
 <div id="screen-brief" class="screen">
-  <div class="case-file">
-    <div class="stamp">Confidential</div>
-    <div class="case-title" id="brief-title"></div>
+  <div class="case-file case-file--dossier">
+    <div class="case-dossier" id="case-dossier" data-sheet="case">
+      <div class="case-dossier-overlay-hint">
+        <span class="case-dossier-hint-label" data-hint-case>Case summary — face A</span>
+        <span class="case-dossier-hint-label" data-hint-poi hidden>Persons of interest — face B</span>
+      </div>
+      <div class="case-dossier-viewport">
+        <div class="case-dossier-track" id="case-dossier-track">
+          <section class="case-dossier-sheet" aria-labelledby="dossier-sheet-case-label">
+            <span id="dossier-sheet-case-label" class="visually-hidden">Case summary</span>
+            <div class="case-dossier-sheet-inner">
+              <div class="stamp">Confidential</div>
+              <div class="case-title" id="brief-title"></div>
 
-    <div class="case-meta">
-      <div class="case-meta-item">
-        <label>Detective</label>
-        <span id="brief-detective"></span>
-      </div>
-      <div class="case-meta-item">
-        <label>Victim</label>
-        <span id="brief-victim"></span>
-      </div>
-      <div class="case-meta-item">
-        <label>Crime</label>
-        <span id="brief-crime"></span>
-      </div>
-      <div class="case-meta-item">
-        <label>Setting</label>
-        <span id="brief-setting"></span>
-      </div>
-      <div class="case-meta-item">
-        <label>Difficulty</label>
-        <span id="brief-difficulty"></span>
-      </div>
-      <div class="case-meta-item">
-        <label>Language</label>
-        <span id="brief-language"></span>
+              <div class="case-meta">
+                <div class="case-meta-item">
+                  <label>Detective</label>
+                  <span id="brief-detective"></span>
+                </div>
+                <div class="case-meta-item">
+                  <label>Victim</label>
+                  <span id="brief-victim"></span>
+                </div>
+                <div class="case-meta-item">
+                  <label>Crime</label>
+                  <span id="brief-crime"></span>
+                </div>
+                <div class="case-meta-item">
+                  <label>Setting</label>
+                  <span id="brief-setting"></span>
+                </div>
+                <div class="case-meta-item">
+                  <label>Difficulty</label>
+                  <span id="brief-difficulty"></span>
+                </div>
+                <div class="case-meta-item">
+                  <label>Language</label>
+                  <span id="brief-language"></span>
+                </div>
+              </div>
+
+              <div class="pre-story" id="brief-prestory"></div>
+            </div>
+            <div class="case-dossier-rail case-dossier-rail--end">
+              <button type="button" class="case-dossier-flip-btn" onclick="flipDossierSheet('poi')" aria-label="Turn to persons of interest" title="Persons of interest">→</button>
+            </div>
+          </section>
+          <section class="case-dossier-sheet case-dossier-sheet--reverse" aria-labelledby="dossier-sheet-poi-label">
+            <span id="dossier-sheet-poi-label" class="visually-hidden">Persons of interest</span>
+            <div class="case-dossier-rail case-dossier-rail--start">
+              <button type="button" class="case-dossier-flip-btn" onclick="flipDossierSheet('case')" aria-label="Turn to case summary" title="Case summary">←</button>
+            </div>
+            <div class="case-dossier-sheet-inner">
+              <div class="case-dossier-reverse-stamp">Appendix</div>
+              <div class="suspects-heading">Persons of Interest</div>
+              <div class="suspect-cards" id="brief-suspects"></div>
+            </div>
+          </section>
+        </div>
       </div>
     </div>
 
-    <div class="pre-story" id="brief-prestory"></div>
-
-    <div class="suspects-heading">Persons of Interest</div>
-    <div class="suspect-cards" id="brief-suspects"></div>
-
-    <div style="display:flex;gap:10px;">
-      <button class="btn" onclick="enterGame()" style="flex:1">Begin Questioning</button>
+    <div id="brief-begin-actions" class="brief-begin-actions">
+      <button type="button" class="btn btn-begin-questioning" onclick="enterGame()">Begin Questioning</button>
     </div>
   </div>
-</div>
 
-<!-- GAME -->
-<div id="screen-game" class="screen">
-  <div class="game-header">
-    <div class="game-title" id="game-title"></div>
-    <div class="player-badge">Det. <span id="game-detective"></span></div>
-    <button class="action-btn" onclick="confirmNewGame()" style="margin-left:12px;white-space:nowrap;">↺ New Game</button>
-  </div>
+  <!-- Questioning UI appears below the case file (does not replace it) -->
+  <div id="brief-game" class="brief-game-panel" aria-hidden="true">
+    <div class="brief-game-inner">
+      <div class="game-header">
+        <div class="game-title" id="game-title"></div>
+        <div class="player-badge">Det. <span id="game-detective"></span></div>
+        <button class="action-btn" onclick="confirmNewGame()" style="margin-left:12px;white-space:nowrap;">↺ New Game</button>
+      </div>
 
-  <div class="suspect-tabs" id="suspect-tabs"></div>
+      <div class="suspect-tabs" id="suspect-tabs"></div>
 
-  <div class="transcript" id="transcript"></div>
+      <div class="chat-view">
+        <div id="chat-panel-main" class="chat-panel-stack is-active">
+          <div class="chat-panel-heading">Interrogation</div>
+          <div class="transcript" id="transcript"></div>
+        </div>
+        <div id="chat-panel-hints" class="chat-panel-stack">
+          <div class="chat-panel-heading">Detective notes — hints</div>
+          <div class="hint-panel-cta" id="hint-panel-cta">
+            <p class="hint-panel-cta-copy">Need a nudge? Your first hint is available here only.</p>
+            <button type="button" class="btn hint-first-btn" id="hint-first-btn" onclick="getHint()">Request first hint</button>
+          </div>
+          <div class="transcript hint-transcript" id="hint-transcript"></div>
+        </div>
+      </div>
 
-  <div class="input-area">
-    <div class="input-row">
-      <textarea class="msg-input" id="msg-input" placeholder="Ask a question…" rows="1"
-        onkeydown="handleKey(event)"></textarea>
-      <button class="send-btn" id="send-btn" onclick="sendTalk()">Ask</button>
-    </div>
-    <div class="action-row">
-      <button class="action-btn accuse-btn" onclick="openAccuse()">⚖ Accuse</button>
-      <button class="action-btn case-btn" onclick="openCaseDrawer()">📁 Case File</button>
-      <button class="action-btn" onclick="getHint()">💡 Hint</button>
-      <button class="action-btn" onclick="giveUp()">✗ Give Up</button>
-    </div>
-    <p class="error-msg" id="game-error"></p>
-  </div>
-</div>
-
-<!-- CASE FILE DRAWER -->
-<div class="case-drawer-overlay" id="case-drawer-overlay" onclick="handleDrawerOverlayClick(event)">
-  <div class="case-drawer" id="case-drawer">
-    <div class="case-drawer-header">
-      <div class="case-drawer-label">Case File — Reference</div>
-      <button class="close-drawer-btn" onclick="closeCaseDrawer()">✕ Close</button>
-    </div>
-    <div class="case-drawer-body">
-      <div class="stamp">Confidential</div>
-      <div class="case-title" id="drawer-title"></div>
-      <div class="case-meta" id="drawer-meta"></div>
-      <div class="pre-story" id="drawer-prestory"></div>
-      <div class="suspects-heading">Persons of Interest</div>
-      <div class="suspect-cards" id="drawer-suspects"></div>
+      <div class="input-area">
+        <div class="input-row">
+          <textarea class="msg-input" id="msg-input" placeholder="Ask a question…" rows="1"
+            onkeydown="handleKey(event)"></textarea>
+          <button class="send-btn" id="send-btn" onclick="sendTalk()">Ask</button>
+        </div>
+        <div class="action-row">
+          <button type="button" class="action-btn accuse-btn" onclick="openAccuse()">⚖ Accuse</button>
+          <button type="button" class="action-btn" id="hint-toolbar-btn" onclick="getHint()" style="display:none" title="Next hint">💡 Hint</button>
+          <button type="button" class="action-btn" onclick="giveUp()">✗ Give Up</button>
+        </div>
+        <p class="error-msg" id="game-error"></p>
+      </div>
     </div>
   </div>
 </div>
@@ -169,6 +191,15 @@
   </div>
 </div>
 
+<!-- After confession: user dismisses before case summary -->
+<div class="post-confession-gate" id="post-confession-gate" onclick="handlePostConfessionBackdropClick(event)">
+  <div class="post-confession-card" onclick="event.stopPropagation()">
+    <div class="post-confession-label">Accusation sustained</div>
+    <p class="post-confession-copy">Read the confession above. When you are ready, continue to the case summary.</p>
+    <button type="button" class="btn post-confession-btn" onclick="dismissPostConfessionGate()">Continue to summary</button>
+  </div>
+</div>
+
 <!-- SOLVED OVERLAY -->
 <div class="solved-overlay" id="solved-overlay">
   <div class="solved-card">
@@ -179,7 +210,13 @@
     <div class="solved-detail"><strong>Motive</strong> <span id="sol-motive"></span></div>
     <div class="solved-detail"><strong>Method</strong> <span id="sol-method"></span></div>
     <hr>
-    <button class="btn" onclick="newGame()" style="margin-top:8px;width:100%">New Case</button>
+    <div id="solved-actions-won" class="solved-actions">
+      <button type="button" class="btn solved-footer-btn" onclick="newGame()">New Case</button>
+    </div>
+    <div id="solved-actions-gaveup" class="solved-actions" hidden>
+      <p class="solved-dismiss-copy">Close this summary to read your interrogations and detective notes.</p>
+      <button type="button" class="btn solved-footer-btn" onclick="dismissSolvedSummaryReadChat()">Close summary</button>
+    </div>
   </div>
 </div>
 <script src="script.js"></script>

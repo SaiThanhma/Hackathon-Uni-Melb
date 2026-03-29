@@ -35,7 +35,6 @@ opacity: 0.4;
 .screen { width: 100%; max-width: 780px; padding: 40px 24px; display: none; }
 .screen.active { display: block; }
 #screen-intro.active { display: flex; }
-#screen-game.active { display: flex; }
 
 /* ===== INTRO ===== */
 #screen-intro {
@@ -113,7 +112,48 @@ animation: pulse 1.5s ease-in-out infinite;
 
 /* ===== CASE BRIEF ===== */
 #screen-brief { animation: fadeIn 0.4s ease; }
+#screen-brief.active {
+display: flex;
+flex-direction: column;
+align-items: stretch;
+gap: 32px;
+}
 @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+
+.brief-game-panel {
+display: none;
+flex-direction: column;
+width: 100%;
+}
+
+.brief-game-panel.open {
+display: flex;
+animation: fadeIn 0.35s ease;
+}
+
+.brief-game-panel .brief-game-inner {
+display: flex;
+flex-direction: column;
+min-height: min(70vh, 640px);
+min-width: 0;
+padding: 0;
+border: 1px solid #2a2320;
+background: var(--ink);
+box-shadow: 4px 4px 0 rgba(0,0,0,0.25);
+}
+
+
+.visually-hidden {
+position: absolute;
+width: 1px;
+height: 1px;
+padding: 0;
+margin: -1px;
+overflow: hidden;
+clip: rect(0, 0, 0, 0);
+white-space: nowrap;
+border: 0;
+}
 
 .case-file {
 background: var(--paper);
@@ -130,6 +170,167 @@ top: 16px; right: 20px;
 font-size: 9px;
 letter-spacing: 0.3em;
 color: var(--dim);
+}
+
+.case-file--dossier {
+background: transparent;
+padding: 0;
+box-shadow: none;
+}
+
+.case-file--dossier::before {
+content: none;
+}
+
+/* Double-sided dossier (case summary ↔ persons of interest) */
+.case-dossier {
+background: var(--paper);
+color: var(--ink);
+position: relative;
+box-shadow:
+  4px 4px 0 var(--crease),
+  8px 8px 0 rgba(0,0,0,0.28),
+  inset 0 0 0 1px rgba(201, 185, 154, 0.35);
+}
+
+.case-dossier-overlay-hint {
+text-align: center;
+padding: 10px 16px 12px;
+font-size: 9px;
+letter-spacing: 0.28em;
+text-transform: uppercase;
+color: var(--smoke);
+background: linear-gradient(180deg, var(--aged) 0%, var(--paper) 100%);
+border-bottom: 1px solid var(--crease);
+}
+
+.case-dossier-viewport {
+overflow: hidden;
+position: relative;
+background: var(--paper);
+}
+
+.case-dossier-track {
+display: flex;
+width: 200%;
+transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+will-change: transform;
+}
+
+.case-dossier.show-poi .case-dossier-track {
+transform: translateX(-50%);
+}
+
+.case-dossier .case-meta {
+grid-template-columns: 1fr 1fr;
+}
+
+.case-dossier-sheet {
+flex: 0 0 50%;
+width: 50%;
+box-sizing: border-box;
+display: flex;
+flex-direction: row;
+align-items: stretch;
+min-height: 260px;
+max-height: min(68vh, 620px);
+overflow: hidden;
+border-right: 1px solid var(--crease);
+background:
+  linear-gradient(90deg, rgba(0,0,0,0.03) 0%, transparent 12%, transparent 88%, rgba(0,0,0,0.03) 100%);
+}
+
+.case-dossier-sheet:last-child {
+border-right: none;
+}
+
+.case-dossier-sheet-inner {
+flex: 1;
+min-width: 0;
+min-height: 0;
+overflow-y: auto;
+padding: 36px 28px 40px 40px;
+position: relative;
+}
+
+.case-dossier-sheet:first-child .case-dossier-sheet-inner::after {
+content: 'CASE FILE';
+position: absolute;
+top: 0;
+right: 12px;
+font-size: 9px;
+letter-spacing: 0.3em;
+color: var(--dim);
+pointer-events: none;
+}
+
+.case-dossier-rail {
+flex: 0 0 48px;
+display: flex;
+align-items: center;
+justify-content: center;
+background: linear-gradient(180deg, var(--aged) 0%, #e0d4bc 50%, var(--aged) 100%);
+border-left: 1px solid var(--crease);
+box-shadow: inset 2px 0 8px rgba(0,0,0,0.06);
+}
+
+.case-dossier-rail--start {
+border-left: none;
+border-right: 1px solid var(--crease);
+box-shadow: inset -2px 0 8px rgba(0,0,0,0.06);
+}
+
+.case-dossier-flip-btn {
+width: 36px;
+height: 72px;
+padding: 0;
+border: 1px solid var(--crease);
+background: var(--paper);
+color: var(--ink);
+font-family: 'Playfair Display', serif;
+font-size: 22px;
+line-height: 1;
+cursor: pointer;
+transition: background 0.2s, color 0.2s, border-color 0.2s;
+border-radius: 2px;
+box-shadow: 1px 2px 0 rgba(0,0,0,0.12);
+}
+
+.case-dossier-flip-btn:hover {
+background: var(--ink);
+color: var(--paper);
+border-color: var(--ink);
+}
+
+.case-dossier-flip-btn:focus-visible {
+outline: 2px solid var(--gold);
+outline-offset: 2px;
+}
+
+.case-dossier-reverse-stamp {
+display: inline-block;
+font-size: 9px;
+letter-spacing: 0.35em;
+text-transform: uppercase;
+color: var(--smoke);
+border: 1px solid var(--crease);
+padding: 5px 10px;
+margin-bottom: 16px;
+}
+
+.case-dossier-sheet--reverse .case-dossier-sheet-inner {
+padding-left: 32px;
+}
+
+.brief-begin-actions {
+width: 100%;
+margin-top: 28px;
+}
+
+.btn-begin-questioning {
+width: 100%;
+display: block;
+box-sizing: border-box;
 }
 
 .stamp {
@@ -203,18 +404,50 @@ margin-bottom: 28px;
 
 .suspect-card {
 display: flex;
-align-items: baseline;
+flex-direction: column;
+align-items: stretch;
 gap: 10px;
-padding: 10px 12px;
+padding: 12px 12px;
 background: var(--aged);
-cursor: pointer;
 border: 1px solid transparent;
 transition: border-color 0.15s;
 }
 
-.suspect-card:hover { border-color: var(--crease); }
-.suspect-card.active { border-color: var(--ink); background: var(--ink); color: var(--paper); }
-.suspect-card.active .suspect-role { color: var(--dim); }
+.suspect-card--dossier {
+cursor: default;
+}
+
+.suspect-card--dossier:hover {
+border-color: transparent;
+}
+
+.suspect-card-top {
+display: flex;
+align-items: baseline;
+gap: 10px;
+}
+
+.suspect-grounds {
+border-top: 1px solid var(--crease);
+padding-top: 10px;
+margin: 0;
+}
+
+.suspect-grounds-label {
+display: block;
+font-size: 9px;
+letter-spacing: 0.2em;
+text-transform: uppercase;
+color: var(--smoke);
+margin-bottom: 6px;
+}
+
+.suspect-grounds-text {
+font-size: 13px;
+line-height: 1.6;
+color: var(--ink);
+margin: 0;
+}
 
 .suspect-number {
 font-size: 10px;
@@ -223,22 +456,10 @@ color: var(--smoke);
 min-width: 20px;
 }
 
-.suspect-card.active .suspect-number { color: var(--dim); }
-
 .suspect-name { font-weight: 700; font-size: 14px; }
 .suspect-role { font-size: 12px; color: var(--smoke); margin-left: auto; }
 
-/* ===== GAME ===== */
-#screen-game {
-display: none;
-flex-direction: column;
-min-height: 100vh;
-padding: 0;
-max-width: 780px;
-}
-
-#screen-game.active { display: flex; }
-
+/* ===== GAME (embedded under case brief) ===== */
 .game-header {
 border-bottom: 1px solid #2a2320;
 padding: 16px 24px;
@@ -297,16 +518,62 @@ font-family: 'Courier Prime', monospace;
 .suspect-tab:hover { color: var(--paper); }
 .suspect-tab.active { color: var(--paper); border-bottom-color: var(--gold); }
 
-/* Transcript */
+.suspect-tab--hints {
+border-left: 1px solid #2a2320;
+padding-left: 18px;
+margin-left: 4px;
+color: #8a7a68;
+}
+
+.suspect-tab--hints:hover { color: var(--gold); }
+.suspect-tab--hints.active {
+color: var(--gold);
+border-bottom-color: var(--gold);
+}
+
+/* One visible panel: interrogation OR hints (tab on bar with suspects) */
+.chat-view {
+flex: 1;
+display: flex;
+flex-direction: column;
+min-height: 260px;
+min-width: 0;
+max-height: calc(100vh - 260px);
+}
+
+.chat-panel-stack {
+display: none;
+flex-direction: column;
+flex: 1;
+min-height: 0;
+border-top: 1px solid #2a2320;
+border-bottom: 1px solid #2a2320;
+}
+
+.chat-panel-stack.is-active {
+display: flex;
+}
+
+.chat-panel-heading {
+padding: 10px 16px;
+font-size: 9px;
+letter-spacing: 0.22em;
+text-transform: uppercase;
+color: var(--dim);
+background: #161210;
+border-bottom: 1px solid #2a2320;
+flex-shrink: 0;
+}
+
 .transcript {
 flex: 1;
-padding: 24px;
+padding: 20px 16px;
 overflow-y: auto;
 display: flex;
 flex-direction: column;
 gap: 16px;
-min-height: 300px;
-max-height: calc(100vh - 280px);
+min-height: 200px;
+max-height: none;
 }
 
 .transcript:empty::after {
@@ -317,6 +584,48 @@ letter-spacing: 0.1em;
 font-style: italic;
 text-align: center;
 margin: auto;
+}
+
+.hint-panel-cta {
+padding: 14px 16px;
+background: #161210;
+border-bottom: 1px solid #2a2320;
+flex-shrink: 0;
+}
+
+.hint-panel-cta-copy {
+font-size: 12px;
+line-height: 1.5;
+color: var(--dim);
+margin-bottom: 12px;
+letter-spacing: 0.04em;
+}
+
+.hint-first-btn {
+width: 100%;
+box-sizing: border-box;
+font-size: 12px;
+padding: 12px 16px;
+}
+
+.hint-transcript:empty::after {
+content: 'Your hints will appear here after you request the first one above.';
+color: var(--smoke);
+font-size: 12px;
+letter-spacing: 0.08em;
+font-style: italic;
+text-align: center;
+margin: auto;
+}
+
+@media (max-width: 720px) {
+.chat-view {
+max-height: none;
+}
+.chat-panel-stack.is-active .transcript {
+min-height: 180px;
+max-height: 48vh;
+}
 }
 
 .msg {
@@ -359,6 +668,18 @@ border: 1px solid var(--red);
 color: #f0c0c0;
 }
 
+.msg.confess-final .msg-label {
+color: var(--gold);
+}
+
+.msg.confess-final .msg-bubble {
+background: #2a2518;
+border: 2px solid var(--gold);
+color: #f2ead8;
+max-width: 92%;
+box-shadow: 0 4px 24px rgba(160, 122, 48, 0.15);
+}
+
 .msg.hint .msg-bubble {
 background: #1a2230;
 border: 1px solid #304060;
@@ -380,6 +701,10 @@ font-size: 13px;
 border-top: 1px solid #2a2320;
 padding: 16px 24px;
 background: var(--ink);
+}
+
+.input-area.read-only {
+opacity: 0.7;
 }
 
 .suspect-selector {
@@ -464,117 +789,59 @@ transition: all 0.15s;
 }
 
 .action-btn:hover { color: var(--paper); border-color: var(--crease); }
+.action-btn:disabled {
+opacity: 0.45;
+cursor: not-allowed;
+pointer-events: none;
+}
 .action-btn.accuse-btn { color: #c05050; border-color: #5a2020; }
 .action-btn.accuse-btn:hover { background: var(--red); color: var(--paper); border-color: var(--red); }
-.action-btn.case-btn { color: var(--gold); border-color: #4a3a10; }
-.action-btn.case-btn:hover { background: var(--gold); color: var(--ink); border-color: var(--gold); }
 
-/* ===== CASE FILE DRAWER ===== */
-.case-drawer-overlay {
+/* ===== POST-CONFESSION (continue to summary) ===== */
+.post-confession-gate {
 display: none;
 position: fixed;
 inset: 0;
-background: rgba(10, 8, 6, 0.75);
-z-index: 60;
-animation: fadeIn 0.2s ease;
-}
-
-.case-drawer-overlay.open {
-display: flex;
-align-items: flex-start;
-justify-content: flex-end;
-}
-
-.case-drawer {
-width: min(520px, 95vw);
-height: 100vh;
-background: var(--paper);
-color: var(--ink);
-overflow-y: auto;
-animation: slideIn 0.25s ease;
-position: relative;
-box-shadow: -8px 0 40px rgba(0,0,0,0.5);
-}
-
-@keyframes slideIn {
-from { transform: translateX(100%); opacity: 0; }
-to { transform: translateX(0); opacity: 1; }
-}
-
-.case-drawer-header {
-display: flex;
+background: rgba(10, 8, 6, 0.82);
+z-index: 95;
 align-items: center;
-justify-content: space-between;
-padding: 16px 20px;
-border-bottom: 1px solid var(--crease);
-position: sticky;
-top: 0;
+justify-content: center;
+padding: 24px;
+animation: fadeIn 0.35s ease;
+}
+
+.post-confession-gate.show {
+display: flex;
+}
+
+.post-confession-card {
 background: var(--paper);
-z-index: 1;
-}
-
-.case-drawer-label {
-font-size: 9px;
-letter-spacing: 0.3em;
-text-transform: uppercase;
-color: var(--smoke);
-}
-
-.close-drawer-btn {
-background: none;
-border: 1px solid var(--crease);
-color: var(--smoke);
-font-family: 'Courier Prime', monospace;
-font-size: 11px;
-letter-spacing: 0.1em;
-text-transform: uppercase;
-padding: 5px 12px;
-cursor: pointer;
-transition: all 0.15s;
-}
-
-.close-drawer-btn:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
-
-.case-drawer-body {
-padding: 24px 28px;
-}
-
-.case-drawer-body .case-title {
-font-family: 'Playfair Display', serif;
-font-size: 22px;
-font-weight: 700;
-line-height: 1.2;
-margin-bottom: 16px;
 color: var(--ink);
+padding: 32px 36px;
+max-width: 420px;
+width: 100%;
+box-shadow: 0 0 50px rgba(0, 0, 0, 0.65);
+border: 1px solid var(--crease);
 }
 
-.case-drawer-body .case-meta {
-grid-template-columns: 1fr 1fr;
-margin-bottom: 20px;
-font-size: 12px;
-}
-
-.case-drawer-body .pre-story {
-font-size: 13px;
-margin-bottom: 20px;
-}
-
-.case-drawer-body .suspects-heading {
+.post-confession-label {
 font-size: 10px;
 letter-spacing: 0.3em;
 text-transform: uppercase;
 color: var(--smoke);
-margin-bottom: 10px;
-padding-bottom: 6px;
-border-bottom: 1px solid var(--crease);
+margin-bottom: 12px;
 }
 
-.case-drawer-body .suspect-cards {
-margin-bottom: 0;
+.post-confession-copy {
+font-size: 14px;
+line-height: 1.65;
+margin-bottom: 24px;
+color: var(--ink);
 }
 
-.case-drawer-body .suspect-card {
-cursor: default;
+.post-confession-btn {
+width: 100%;
+box-sizing: border-box;
 }
 
 /* ===== SOLVED OVERLAY ===== */
@@ -632,6 +899,23 @@ font-size: 10px;
 letter-spacing: 0.15em;
 text-transform: uppercase;
 color: var(--smoke);
+}
+
+.solved-actions {
+margin-top: 8px;
+}
+
+.solved-footer-btn {
+width: 100%;
+box-sizing: border-box;
+}
+
+.solved-dismiss-copy {
+font-size: 13px;
+line-height: 1.55;
+color: var(--smoke);
+margin-bottom: 14px;
+text-align: left;
 }
 
 .solved-card hr {
