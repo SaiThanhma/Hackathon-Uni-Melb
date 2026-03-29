@@ -326,18 +326,27 @@ def hint_total_for_case(case_data: Dict[str, Any]) -> int:
 
 def evaluate_accusation_with_ai(client: OpenAI, case_data, accused_name, argument):
     solution = case_data["solution"]
+    judge_system = (
+        "You are a strict judge for a detective game. "
+        "A player wins ONLY by correctly naming the culprit AND demonstrating they understand "
+        "how and why the crime was committed.\n\n"
+        "Return ONLY valid JSON. No markdown fences. No commentary.\n"
+        'Schema: {"correct_culprit": bool, "has_motive": bool, "has_method": bool, '
+        '"accurate_enough": bool, "should_confess": bool, "reason": "string"}\n\n'
+        "Rules:\n"
+        "- correct_culprit: true ONLY if the accused is the real culprit.\n"
+        "- has_motive: true ONLY if the argument meaningfully explains WHY the accused committed "
+        "the crime in a way that matches the real motive. Vague statements like 'they had a reason' "
+        "or 'I just know' do NOT qualify.\n"
+        "- has_method: true ONLY if the argument meaningfully explains HOW the crime was committed "
+        "in a way that matches the real method. Generic statements like 'they did it somehow' do NOT qualify.\n"
+        "- accurate_enough: true ONLY if correct_culprit AND has_motive AND has_method are ALL true. "
+        "A bare accusation with no motive or method must return false even if the correct suspect is named.\n"
+        "- should_confess: true ONLY if accurate_enough is true.\n\n"
+        "The player must EARN the win through genuine deduction — not just naming a suspect."
+    )
     judge_messages = [
-        {
-            "role": "system",
-            "content": """
-You are a strict but fair judge for a detective game.
-Return ONLY valid JSON. No markdown fences. No commentary.
-Schema: {"correct_culprit": true, "accurate_enough": true, "should_confess": true, "reason": "string"}
-- "correct_culprit" is true only if the accused NPC is the real culprit.
-- "accurate_enough" is true if the accusation meaningfully matches the ground truth.
-- "should_confess" is true only if both correct_culprit and accurate_enough are true.
-""".strip(),
-        },
+        {"role": "system", "content": judge_system},
         {
             "role": "user",
             "content": json.dumps({

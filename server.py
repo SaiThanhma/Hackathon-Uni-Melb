@@ -27,7 +27,7 @@ CORS(app)
 # Client setup
 # =========================
 client = OpenAI(
-    api_key="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",
+    api_key="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",
     base_url="https://api.groq.com/openai/v1",
 )
 
