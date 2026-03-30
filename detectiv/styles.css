@@ -1204,6 +1204,24 @@
     flex-wrap: wrap;
     flex-shrink: 0;
   }
+
+  .accuse-post-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+    padding: 10px 14px;
+    border-top: 1px solid #2a1a1a;
+    background: #100808;
+  }
+
+  .accuse-post-nav-label {
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    font-style: italic;
+  }
   
   .accuse-hints-drawer {
     background: #12090a;
@@ -1534,69 +1552,132 @@
   /* ===== BACKGROUND MUSIC ===== */
   .music-dock {
     position: fixed;
-    bottom: 16px;
+    top: 16px;
     right: 16px;
     z-index: 150;
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 10px 14px;
-    background: rgba(26, 21, 18, 0.92);
-    border: 1px solid #3a3330;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
+    gap: 8px;
   }
-  
-  .music-dock-label {
-    font-size: 9px;
-    letter-spacing: 0.22em;
+
+  .music-dock-controls {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* Vertical volume slider — shown on hover below the button.
+     The popup is wider than the button so the mouse can travel to it
+     without leaving the hover zone. JS mouseenter/mouseleave manages
+     the open class to avoid the gap-crossing flicker. */
+  .music-volume-popup {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(22, 18, 15, 0.97);
+    border: 1px solid #3a3330;
+    /* wide padding so the mouse has a large target */
+    padding: 10px 14px 14px;
+    width: 56px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.6);
+    z-index: 200;
+  }
+
+  /* JS adds .open class to keep popup visible */
+  .music-volume-popup.open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .music-volume-label {
+    font-size: 8px;
+    letter-spacing: 0.2em;
     text-transform: uppercase;
     color: var(--dim);
-    flex-shrink: 0;
+    user-select: none;
   }
-  
+
+  /* Vertical range input — taller and wider track for easier control */
+  .music-volume-slider {
+    -webkit-appearance: slider-vertical;
+    appearance: slider-vertical;
+    width: 28px;
+    height: 88px;
+    writing-mode: vertical-lr;
+    direction: rtl;
+    cursor: pointer;
+    accent-color: var(--crease);
+    background: transparent;
+    touch-action: none;
+  }
+
+  /* Fallback for browsers that don't support slider-vertical */
+  @supports not (appearance: slider-vertical) {
+    .music-volume-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      writing-mode: vertical-lr;
+      direction: rtl;
+      width: 28px;
+      height: 88px;
+    }
+  }
+
   .music-mute-btn {
-    background: none;
+    background: rgba(26, 21, 18, 0.85);
     border: 1px solid #3a3330;
     color: var(--dim);
-    font-size: 16px;
+    font-size: 17px;
     line-height: 1;
-    padding: 6px 10px;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     cursor: pointer;
-    transition: color 0.15s, border-color 0.15s;
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
+    flex-shrink: 0;
   }
-  
+
   .music-mute-btn:hover {
     color: var(--paper);
     border-color: var(--crease);
+    background: rgba(40, 34, 30, 0.95);
   }
-  
-  .music-mute-btn[aria-pressed="true"] {
-    color: var(--smoke);
-    opacity: 0.75;
-  }
-  
-  .music-vol-wrap {
-    display: flex;
+
+  /* New game button — shown in the dock after game starts */
+  .music-dock-newgame-btn {
+    background: rgba(26, 21, 18, 0.85);
+    border: 1px solid #3a3330;
+    color: var(--dim);
+    font-size: 17px;
+    line-height: 1;
+    width: 36px;
+    height: 36px;
+    display: none;
     align-items: center;
-    min-width: 0;
-  }
-  
-  .music-volume {
-    width: 100px;
-    height: 4px;
-    accent-color: var(--gold);
+    justify-content: center;
     cursor: pointer;
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
+    flex-shrink: 0;
+    font-family: 'Courier Prime', monospace;
   }
-  
-  @media (max-width: 520px) {
-    .music-dock {
-      left: 12px;
-      right: 12px;
-      bottom: 12px;
-      justify-content: space-between;
-    }
-    .music-volume {
-      flex: 1;
-      max-width: 140px;
-    }
+
+  .music-dock-newgame-btn:hover {
+    color: var(--paper);
+    border-color: var(--crease);
+    background: rgba(40, 34, 30, 0.95);
+  }
+
+  .music-dock-newgame-btn.visible {
+    display: flex;
   }

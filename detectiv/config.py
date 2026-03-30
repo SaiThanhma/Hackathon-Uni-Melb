@@ -7,7 +7,7 @@
 # ---------------------------------------------------------------------------
 # API client
 # ---------------------------------------------------------------------------
-API_KEY  = "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"
+API_KEY  = "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"
 BASE_URL = "https://api.groq.com/openai/v1"
 
 # ---------------------------------------------------------------------------
