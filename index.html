@@ -54,7 +54,6 @@
       <div class="setting-options lang-options" id="opt-language">
         <button class="opt-btn active" data-val="English" onclick="setOpt('language','English',this)">English</button>
         <button class="opt-btn" data-val="German" onclick="setOpt('language','German',this)">Deutsch</button>
-        <button class="opt-btn" data-val="Japanese" onclick="setOpt('language','Japanese',this)">日本語</button>
         <button class="opt-btn" data-val="Chinese" onclick="setOpt('language','Chinese',this)">中文</button>
         <button class="opt-btn" data-val="Vietnamese" onclick="setOpt('language','Vietnamese',this)">Tiếng Việt</button>
       </div>
@@ -158,57 +157,102 @@
         <div class="game-title" id="game-title"></div>
         <div class="game-timer" id="game-timer" hidden role="timer" aria-live="polite"></div>
         <div class="player-badge">Det. <span id="game-detective"></span></div>
-        <button class="action-btn" onclick="confirmNewGame()" style="margin-left:12px;white-space:nowrap;">↺ New Game</button>
       </div>
 
-      <div class="suspect-tabs" id="suspect-tabs"></div>
-
-      <div class="chat-view">
-        <div id="chat-panel-main" class="chat-panel-stack is-active">
-          <div class="chat-panel-heading">Interrogation</div>
-          <div class="transcript" id="transcript"></div>
+      <!-- NORMAL INTERROGATION VIEW -->
+      <div id="interrogation-view">
+        <div class="suspect-tabs" id="suspect-tabs"></div>
+        <div class="chat-view">
+          <div id="chat-panel-main" class="chat-panel-stack is-active">
+            <div class="chat-panel-heading">Interrogation</div>
+            <div class="transcript" id="transcript"></div>
+          </div>
+          <div id="chat-panel-hints" class="chat-panel-stack">
+            <div class="chat-panel-heading">Detective notes — hints</div>
+            <div class="transcript hint-transcript" id="hint-transcript"></div>
+          </div>
         </div>
-        <div id="chat-panel-hints" class="chat-panel-stack">
-          <div class="chat-panel-heading">Detective notes — hints</div>
-          <div class="transcript hint-transcript" id="hint-transcript"></div>
+        <div class="input-area" id="normal-input-area">
+          <div class="input-row">
+            <textarea class="msg-input" id="msg-input" placeholder="Ask a question…" rows="1"
+              onkeydown="handleKey(event)"></textarea>
+            <button class="send-btn" id="send-btn" onclick="sendTalk()">Ask</button>
+          </div>
+          <div class="action-row">
+            <button type="button" class="action-btn accuse-btn" onclick="openAccuse()">⚖ Accuse</button>
+            <button type="button" class="action-btn hint-action-btn" id="hint-toolbar-btn" onclick="getHint()" title="Next hint">💡 Hint</button>
+            <button type="button" class="action-btn" onclick="giveUp()">✗ Give Up</button>
+          </div>
+          <p class="error-msg" id="game-error"></p>
         </div>
       </div>
 
-      <div class="input-area">
-        <div class="input-row">
-          <textarea class="msg-input" id="msg-input" placeholder="Ask a question…" rows="1"
-            onkeydown="handleKey(event)"></textarea>
-          <button class="send-btn" id="send-btn" onclick="sendTalk()">Ask</button>
+      <!-- ACCUSATION HEARING VIEW (replaces interrogation view entirely) -->
+      <div id="accuse-panel-trial" class="accuse-trial-panel" style="display:none;">
+        <div class="accuse-trial-header">
+          <div class="accuse-trial-header-left">
+            <div class="accuse-trial-label">Formal Accusation — Hearing</div>
+            <div class="accuse-trial-title" id="accuse-trial-title">vs …</div>
+          </div>
+          <div class="accuse-timer" id="accuse-timer" role="timer" aria-live="polite">1:30</div>
         </div>
-        <div class="action-row">
-          <button type="button" class="action-btn accuse-btn" onclick="openAccuse()">⚖ Accuse</button>
-          <button type="button" class="action-btn hint-action-btn" id="hint-toolbar-btn" onclick="getHint()" title="Next hint">💡 Hint</button>
-          <button type="button" class="action-btn" onclick="giveUp()">✗ Give Up</button>
+        <p class="accuse-trial-hint">What is the <strong>motive</strong> and <strong>method</strong>?</p>
+        <!-- Hints drawer (hidden by default, toggled during hearing) — shown above transcript -->
+        <div id="accuse-hints-drawer" class="accuse-hints-drawer" style="display:none;">
+          <div class="accuse-hints-drawer-label">Detective Notes — Hints</div>
+          <div class="accuse-hints-drawer-list" id="accuse-hints-list"></div>
         </div>
-        <p class="error-msg" id="game-error"></p>
+        <div class="accuse-trial-transcript" id="accuse-trial-transcript"></div>
+        <div class="accuse-trial-input-row">
+          <textarea id="accuse-trial-input" class="accuse-trial-textarea" rows="2" placeholder="Your statement…" onkeydown="handleAccuseTrialKey(event)"></textarea>
+          <button type="button" class="accuse-trial-send-btn" id="accuse-trial-send-btn" onclick="sendAccusationTrialMessage()">Send</button>
+        </div>
+        <div class="accuse-trial-footer">
+          <button type="button" class="action-btn btn-danger" onclick="abandonAccusationHearing()">✗ Abandon accusation</button>
+          <button type="button" class="action-btn hint-action-btn" id="accuse-hint-btn" onclick="toggleAccuseHints()">💡 Hints</button>
+          <p class="error-msg" id="accuse-trial-error"></p>
+        </div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- ACCUSE MODAL -->
-<div id="accuse-panel" style="display:none; position:fixed; inset:0; background:rgba(10,8,6,0.88); z-index:50; align-items:center; justify-content:center;">
-  <div style="background:var(--paper);color:var(--ink);padding:36px;max-width:460px;width:90%;box-shadow:0 0 40px rgba(0,0,0,0.7);">
-    <div style="font-size:10px;letter-spacing:0.25em;text-transform:uppercase;color:var(--smoke);margin-bottom:8px;">Formal Accusation</div>
-    <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;margin-bottom:20px;">Make Your Charge</div>
-    <div style="font-size:12px;color:var(--smoke);margin-bottom:8px;letter-spacing:0.1em;text-transform:uppercase;">Accusing:</div>
-    <select id="accuse-select" style="width:100%;background:var(--aged);border:1px solid var(--crease);font-family:'Courier Prime',monospace;font-size:13px;padding:8px;margin-bottom:16px;color:var(--ink);cursor:pointer;"></select>
-    <div style="font-size:12px;color:var(--smoke);margin-bottom:8px;letter-spacing:0.1em;text-transform:uppercase;">Your argument:</div>
-    <textarea id="accuse-input" style="width:100%;background:var(--aged);border:1px solid var(--crease);font-family:'Courier Prime',monospace;font-size:13px;padding:10px;min-height:80px;color:var(--ink);resize:none;outline:none;" placeholder="You must explain both the motive (why they did it) and the method (how they did it). A bare accusation won't hold up in court."></textarea>
-    <div style="display:flex;gap:8px;margin-top:16px;">
-      <button class="btn btn-danger" onclick="submitAccusation()" style="flex:1">Accuse</button>
-      <button class="btn" onclick="closeAccuse()" style="flex:1">Cancel</button>
+<!-- ACCUSE: confirm (one chance) -->
+<div id="accuse-panel-confirm" class="accuse-overlay" style="display:none;">
+  <div class="accuse-card">
+    <div class="accuse-dialog-label">Formal accusation</div>
+    <div class="accuse-dialog-title">Make your charge</div>
+    <p class="accuse-once-warning">
+      You may accuse <strong>only once</strong> in this case. After you continue, you get <strong>90 seconds</strong> to argue your case in a back-and-forth with the suspect: explain <strong>motive</strong> and <strong>how</strong> the crime was done. They may defend themselves. If your case is convincing enough, you win. If time runs out before that, you lose.
+    </p>
+    <div class="accuse-field-label">Who do you accuse?</div>
+    <select id="accuse-select" class="accuse-select"></select>
+    <div style="display:flex;gap:8px;margin-top:20px;">
+      <button type="button" class="btn btn-danger" onclick="confirmAccusationBegin()" style="flex:1">Accuse</button>
+      <button type="button" class="btn" onclick="closeAccuseConfirm()" style="flex:1">Cancel</button>
     </div>
-    <p class="error-msg" id="accuse-error"></p>
+    <p class="error-msg" id="accuse-confirm-error"></p>
   </div>
 </div>
+
+<!-- ACCUSE: timed hearing — now embedded inside the game panel, not a modal -->
 
 <!-- SOLVED OVERLAY -->
+<audio id="bg-music" preload="auto" playsinline></audio>
+<div id="music-dock" class="music-dock">
+  <button type="button" class="music-dock-newgame-btn" id="dock-newgame-btn" title="New case" onclick="confirmNewGame()">↺</button>
+  <div class="music-dock-controls">
+    <div class="music-volume-popup" id="music-volume-popup">
+      <span class="music-volume-label">Vol</span>
+      <input type="range" class="music-volume-slider" id="music-volume-slider"
+        min="0" max="1" step="0.02" value="0.6"
+        aria-label="Music volume"
+        oninput="setMusicVolumeFromSlider(parseFloat(this.value))">
+    </div>
+    <button type="button" class="music-mute-btn" id="music-mute-btn" title="Mute / unmute music" aria-pressed="false">🔊</button>
+  </div>
+</div>
+
 <div class="solved-overlay" id="solved-overlay">
   <div class="solved-card">
     <div class="solved-stamp" id="solved-stamp">Case Closed</div>
