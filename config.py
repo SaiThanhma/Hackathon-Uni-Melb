@@ -16,9 +16,9 @@ BASE_URL = "https://api.groq.com/openai/v1"
 #   CHARACTER_MODEL — powers every suspect's in-character replies
 #   JUDGE_MODEL     — evaluates the player's accusation argument
 # ---------------------------------------------------------------------------
-SETUP_MODEL     = "openai/gpt-oss-20b"
-CHARACTER_MODEL = "openai/gpt-oss-20b"
-JUDGE_MODEL     = "openai/gpt-oss-20b"
+SETUP_MODEL     = "llama-3.3-70b-versatile"
+CHARACTER_MODEL = "llama-3.3-70b-versatile"
+JUDGE_MODEL     = "llama-3.3-70b-versatile"
 
 # ---------------------------------------------------------------------------
 # Game constants

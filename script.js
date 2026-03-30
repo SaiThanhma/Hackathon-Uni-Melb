@@ -14,6 +14,10 @@ let caseReadOnly = false;
 /** From server; ladder length for this case. */
 let maxHints = 5;
 let hintsExhausted = false;
+/** Interrogation tips per suspect, fetched on demand: { suspectName: [tip, tip, ...] } */
+let tipsCache = {};
+/** Whether the tips drawer is currently visible. */
+let tipsVisible = false;
 
 const settings = { players: 3, difficulty: 'normal', language: 'English', timeLimitMinutes: null };
 
@@ -436,6 +440,8 @@ function newGame() {
   hintLog = [];
   maxHints = 5;
   hintsExhausted = false;
+  tipsCache = {};
+  tipsVisible = false;
   pendingSolvedPayload = null;
   releaseCaseReadOnlyUI();
 

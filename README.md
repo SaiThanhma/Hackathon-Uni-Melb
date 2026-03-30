@@ -1,4 +1,4 @@
-# Hackiethon-2026 | Detective Game
+# Hackiethon-2026 | The Detective
 
 This project was created for the Hackiethon 2026 at The University of Melbourne under the following theme:
 
@@ -7,7 +7,7 @@ Designing and develop a game of any genre that incorporates a large language mod
 
 This is a browser-based detective roleplay game built with Flask. You investigate a mystery by questioning suspects, asking for hints, and making accusations until you solve the case.
 
-# 🔍 The Detective — AI Mystery Game
+## 🔍 The Detective — AI Mystery Game
 
 An AI-generated browser-based mystery game. Every case — suspects, secrets, alibis, crime, solution — is freshly invented each play. No two games are the same.
 
@@ -53,9 +53,9 @@ Drop `.mp3` / `.ogg` / `.wav` files into a `music/` folder next to `server.py`. 
 | Setting | Default | Description |
 |---|---|---|
 | `API_KEY` | — | Your Groq API key |
-| `SETUP_MODEL` | `openai/gpt-oss-20b` | Generates the case JSON |
-| `CHARACTER_MODEL` | `openai/gpt-oss-20b` | Powers suspect dialogue |
-| `JUDGE_MODEL` | `openai/gpt-oss-20b` | Evaluates accusation arguments |
+| `SETUP_MODEL` | `llama-3.3-70b-versatile` | Generates the case JSON |
+| `CHARACTER_MODEL` | `llama-3.3-70b-versatile` | Powers suspect dialogue |
+| `JUDGE_MODEL` | `llama-3.3-70b-versatile` | Evaluates accusation arguments |
 | `N_PLAYER` | `3` | Default suspect count |
 | `ACCUSATION_SECONDS` | `90` | Duration of the hearing |
 
@@ -70,6 +70,27 @@ All prompts live in `prompts.py`. Edit tone, difficulty instructions, or judge c
 - **Confession token** — a cryptographic secret embedded in the culprit's system prompt; they only confess when the engine sends it after a verified win. Players cannot trick them into confessing early
 - **Jailbreak defence** — server-side keyword filter blocks phrases like "who is the culprit" / "reveal the solution" / "ignore previous instructions" before they reach the model. Suspects are also instructed to refuse meta questions in-character
 - **Accusation substance gate** — the judge's verdict is additionally filtered: argument must be >80 chars, contain substantive keywords (motive, method, evidence…), and not be a trivial phrase
+
+---
+
+## Architecture
+
+The game utilizes a multi-agent orchestration of three LLM.
+
+### 1. The Architect (`SETUP_MODEL`)
+* **Purpose**: Generates the entire mystery universe—including setting, victim, and crime—as a structured JSON object.
+* **Ground Truth**: Defines the hidden solution, including the culprit's identity, motive, and method, which is stored only on the server.
+* **Asymmetry**: Assigns unique knowledge and secrets to each suspect, creating a web of partial information and red herrings.
+
+### 2. The Suspects (`CHARACTER_MODEL`)
+* **Purpose**: Powers interactive, in-character dialogues for all NPCs.
+* **Dynamic Roleplay**: Each suspect reacts based on a unique dossier of personality traits, alibis, and relationships.
+* **Confession Gate**: Culprits are hard-coded to deny all guilt until the engine sends a secret cryptographic "Confession Token" (`CONFESSION_AUTH`) only after a verified win.
+
+### 3. The Arbiter (`JUDGE_MODEL`)
+* **Purpose**: Evaluates the 90-second "Accusation Hearing" against the ground truth.
+* **Win Criteria**: The Judge grants a win only if the player correctly identifies the culprit and provides a substantive explanation of both **motive** and **method**.
+* **Anti-Trivialization**: Automatically rejects "lazy" accusations (e.g., "It was you!") that lack case-specific details or fail to meet minimum character/keyword thresholds.
 
 ---
 

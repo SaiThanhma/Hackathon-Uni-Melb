@@ -25,11 +25,14 @@ from prompts import (
     CONFESSION_RULE_NO_TOKEN,
     CONFESSION_RULE_WITH_TOKEN,
     CULPRIT_PRIVATE_TRUTH,
+    HINT_COUNT_BY_DIFFICULTY,
     INNOCENT_PRIVATE_TRUTH,
     JUDGE_SYSTEM_PROMPT,
     META_JAILBREAK_ACCUSE_REPLY,
     META_JAILBREAK_TALK_REPLY,
     character_system_prompt,
+    hint_system_prompt,
+    hint_user_prompt,
     setup_system_prompt,
     setup_user_prompt,
 )
@@ -52,6 +55,7 @@ __all__ = [
     "issue_culprit_confession_token",
     "merge_accusation_dialogue_into_convo",
     "run_post_judge_confession",
+    "get_interrogation_tips",
 ]
 
 
@@ -141,6 +145,7 @@ def validate_case_config(data: Dict[str, Any], n_player: int) -> Dict[str, Any]:
         secret        = str(suspect.get("secret", "")).strip()
         why_suspected = str(suspect.get("why_suspected", "")).strip()
         knowledge     = suspect.get("knowledge", [])
+        interrogation_tips = suspect.get("interrogation_tips", [])
 
         if not all([name, role, personality, alibi, secret, why_suspected]):
             raise ValueError("Each suspect needs all fields including why_suspected.")
@@ -151,11 +156,14 @@ def validate_case_config(data: Dict[str, Any], n_player: int) -> Dict[str, Any]:
             culprit_found = True
         if not isinstance(knowledge, list):
             raise ValueError(f"Knowledge for {name} must be a list.")
+        if not isinstance(interrogation_tips, list):
+            interrogation_tips = []
 
         clean_suspects.append({
             "name": name, "role": role, "personality": personality,
             "alibi": alibi, "secret": secret, "why_suspected": why_suspected,
             "knowledge": [str(x).strip() for x in knowledge if str(x).strip()],
+            "interrogation_tips": [str(x).strip() for x in interrogation_tips if str(x).strip()],
         })
 
     if not culprit_found:
@@ -241,31 +249,54 @@ def build_accusation_phase_system_prompt(
 
 
 # ---------------------------------------------------------------------------
-# Hints
+# Interrogation tips (shown to player when they feel stuck)
 # ---------------------------------------------------------------------------
 
-def _hint_ladder(case_data: Dict[str, Any]) -> List[str]:
-    solution     = case_data["solution"]
-    culprit      = solution["culprit"]
-    culprit_data = next(s for s in case_data["suspects"] if s["name"] == culprit)
-    return [
-        "One suspect's story becomes weaker if you press on timing and consistency.",
-        f"Focus on {culprit_data['role']}. Their alibi and behavior deserve closer attention.",
-        f"The motive is tied to: {solution['motive']}",
-        f"The method involved: {solution['method']}",
-        f"The culprit is {culprit}.",
-    ]
+def get_interrogation_tips(case_data: Dict[str, Any], suspect_name: str) -> List[str]:
+    """Return the interrogation tips for a given suspect."""
+    for suspect in case_data["suspects"]:
+        if suspect["name"] == suspect_name:
+            return suspect.get("interrogation_tips", [])
+    return []
 
 
-def build_hint(case_data: Dict[str, Any], hint_level: int) -> Optional[str]:
-    hints = _hint_ladder(case_data)
-    if hint_level < 0 or hint_level >= len(hints):
-        return None
-    return hints[hint_level]
-
+# ---------------------------------------------------------------------------
+# Hints — AI-generated, progressively specific
+# ---------------------------------------------------------------------------
 
 def hint_total_for_case(case_data: Dict[str, Any]) -> int:
-    return len(_hint_ladder(case_data))
+    """Total number of hints available, based on difficulty."""
+    difficulty = case_data.get("difficulty", "normal")
+    return HINT_COUNT_BY_DIFFICULTY.get(difficulty, 5)
+
+
+def build_hint(
+    client: OpenAI,
+    case_data: Dict[str, Any],
+    hint_index: int,
+) -> Optional[str]:
+    """Generate the next hint via AI. Returns None if hints are exhausted."""
+    total = hint_total_for_case(case_data)
+    if hint_index < 0 or hint_index >= total:
+        return None
+
+    messages = [
+        {"role": "system", "content": hint_system_prompt()},
+        {"role": "user",   "content": hint_user_prompt(case_data, hint_index)},
+    ]
+    response = client.chat.completions.create(
+        model=SETUP_MODEL, messages=messages, temperature=0.7,
+    )
+    raw = response.choices[0].message.content.strip()
+    parsed = safe_json_loads(raw)
+    if parsed and "hint" in parsed:
+        return str(parsed["hint"]).strip()
+
+    # Fallback: return raw text if JSON parse fails
+    cleaned = re.sub(r"```(?:json)?|```", "", raw).strip()
+    if cleaned:
+        return cleaned
+    return None
 
 
 # ---------------------------------------------------------------------------

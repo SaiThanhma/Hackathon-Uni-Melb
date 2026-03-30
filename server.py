@@ -20,6 +20,7 @@ from game_logic import (
     evaluate_accusation_dialogue_with_ai,
     format_accusation_dialogue_for_judge,
     generate_detective_case,
+    get_interrogation_tips,
     hint_total_for_case,
     is_meta_or_jailbreak,
     issue_culprit_confession_token,
@@ -31,7 +32,6 @@ app = Flask(__name__, static_folder=".")
 CORS(app)
 
 # Background music: place audio files in `music/` next to this file.
-# Also scans `detectiv/music/` (common if the project folder is nested twice).
 _BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MUSIC_DIR = os.path.join(_BASE_DIR, "music")
 MUSIC_DIR_NESTED = os.path.join(_BASE_DIR, "music")
@@ -94,6 +94,8 @@ def new_game():
         "accusation_convo": None,
     }
 
+    max_hints = hint_total_for_case(case_data)
+
     return jsonify({
         "session_id": session_id,
         "player_name": case_data["player_name"],
@@ -103,10 +105,15 @@ def new_game():
         "crime": case_data["crime"],
         "pre_story": case_data["pre_story"],
         "suspects": [
-            {"name": s["name"], "role": s["role"], "personality": s["personality"], "why_suspected": s["why_suspected"]}
+            {
+                "name": s["name"],
+                "role": s["role"],
+                "personality": s["personality"],
+                "why_suspected": s["why_suspected"],
+            }
             for s in case_data["suspects"]
         ],
-        "max_hints": hint_total_for_case(case_data),
+        "max_hints": max_hints,
     })
 
 
@@ -143,6 +150,27 @@ def talk():
 
     convo.append({"role": "assistant", "content": reply})
     return jsonify({"reply": reply, "type": "talk"})
+
+
+@app.route("/api/tips", methods=["POST"])
+def tips():
+    """Return interrogation tips for a specific suspect."""
+    data = request.json or {}
+    session_id = data.get("session_id")
+    suspect_name = data.get("suspect_name")
+
+    if session_id not in sessions:
+        return jsonify({"error": "Invalid session"}), 400
+
+    session = sessions[session_id]
+    case_data = session["case_data"]
+    suspect_names = [s["name"] for s in case_data["suspects"]]
+
+    if suspect_name not in suspect_names:
+        return jsonify({"error": "Unknown suspect"}), 400
+
+    tip_list = get_interrogation_tips(case_data, suspect_name)
+    return jsonify({"tips": tip_list, "suspect_name": suspect_name})
 
 
 @app.route("/api/accuse/begin", methods=["POST"])
@@ -340,11 +368,27 @@ def hint():
         return jsonify({"error": "Invalid session"}), 400
 
     session = sessions[session_id]
-    hint_text = build_hint(session["case_data"], session["hint_count"])
+    case_data = session["case_data"]
+    hint_index = session["hint_count"]
+    total = hint_total_for_case(case_data)
+
+    if hint_index >= total:
+        return jsonify({"exhausted": True})
+
+    try:
+        hint_text = build_hint(client, case_data, hint_index)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
     if hint_text is None:
         return jsonify({"exhausted": True})
+
     session["hint_count"] += 1
-    return jsonify({"hint": hint_text})
+    return jsonify({
+        "hint": hint_text,
+        "hint_number": hint_index + 1,
+        "hints_remaining": total - session["hint_count"],
+    })
 
 
 @app.route("/api/give_up", methods=["POST"])
