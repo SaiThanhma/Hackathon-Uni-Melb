@@ -824,27 +824,36 @@ function renderHintPanel() {
   box.scrollTop = box.scrollHeight;
 }
 
+function _populateAccuseHintsList() {
+  const list = document.getElementById('accuse-hints-list');
+  if (!list) return;
+  list.innerHTML = '';
+  hintLog.forEach((text, i) => {
+    const item = document.createElement('div');
+    item.style.cssText = 'font-size:13px;color:#a0c0e0;font-style:italic;line-height:1.5;padding:6px 0;border-bottom:1px solid #1a2030;';
+    item.textContent = `${i + 1}. ${text}`;
+    list.appendChild(item);
+  });
+}
+
+function closeAccuseHints() {
+  const drawer = document.getElementById('accuse-hints-drawer');
+  const btn = document.getElementById('accuse-hint-btn');
+  if (!drawer) return;
+  drawer.classList.remove('is-open');
+  if (btn) btn.textContent = '💡 Hints';
+}
+
 function toggleAccuseHints() {
   const drawer = document.getElementById('accuse-hints-drawer');
   const btn = document.getElementById('accuse-hint-btn');
   if (!drawer) return;
-  const isOpen = drawer.style.display !== 'none';
+  const isOpen = drawer.classList.contains('is-open');
   if (isOpen) {
-    drawer.style.display = 'none';
-    if (btn) btn.textContent = '💡 Hints';
+    closeAccuseHints();
   } else {
-    // Populate list from hintLog
-    const list = document.getElementById('accuse-hints-list');
-    if (list) {
-      list.innerHTML = '';
-      hintLog.forEach((text, i) => {
-        const item = document.createElement('div');
-        item.style.cssText = 'font-size:13px;color:#a0c0e0;font-style:italic;line-height:1.5;padding:6px 0;border-bottom:1px solid #1a2030;';
-        item.textContent = `${i + 1}. ${text}`;
-        list.appendChild(item);
-      });
-    }
-    drawer.style.display = 'block';
+    _populateAccuseHintsList();
+    drawer.classList.add('is-open');
     if (btn) btn.textContent = '💡 Hide hints';
   }
 }
@@ -1067,11 +1076,18 @@ function openAccuseTrial(suspectName, deadlineMs) {
   // Reset hints drawer
   const drawer = document.getElementById('accuse-hints-drawer');
   const hintBtn = document.getElementById('accuse-hint-btn');
-  if (drawer) drawer.style.display = 'none';
+  if (drawer) drawer.classList.remove('is-open');
   if (hintBtn) hintBtn.textContent = '💡 Hints';
   // Hide hint button if no hints have been used
   if (hintBtn) hintBtn.style.display = hintLog.length > 0 ? '' : 'none';
   setAccuseTrialInputEnabled(true);
+  // Close hints overlay when clicking on the transcript itself
+  const transcriptEl = document.getElementById('accuse-trial-transcript');
+  if (transcriptEl) {
+    transcriptEl.addEventListener('click', function onTranscriptClick() {
+      closeAccuseHints();
+    });
+  }
   accusationTimerId = setInterval(tickAccusationTimer, 250);
   tickAccusationTimer();
 }

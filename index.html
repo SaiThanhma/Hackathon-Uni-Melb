@@ -197,15 +197,18 @@
           <div class="accuse-timer" id="accuse-timer" role="timer" aria-live="polite">1:30</div>
         </div>
         <p class="accuse-trial-hint">What is the <strong>motive</strong> and <strong>method</strong>?</p>
-        <!-- Hints drawer (hidden by default, toggled during hearing) — shown above transcript -->
-        <div id="accuse-hints-drawer" class="accuse-hints-drawer" style="display:none;">
-          <div class="accuse-hints-drawer-label">Detective Notes — Hints</div>
-          <div class="accuse-hints-drawer-list" id="accuse-hints-list"></div>
-        </div>
         <div class="accuse-trial-transcript" id="accuse-trial-transcript"></div>
         <div class="accuse-trial-input-row">
           <textarea id="accuse-trial-input" class="accuse-trial-textarea" rows="2" placeholder="Your statement…" onkeydown="handleAccuseTrialKey(event)"></textarea>
           <button type="button" class="accuse-trial-send-btn" id="accuse-trial-send-btn" onclick="sendAccusationTrialMessage()">Send</button>
+        </div>
+        <!-- Hints drawer (hidden by default, toggled during hearing) -->
+        <div id="accuse-hints-drawer" class="accuse-hints-drawer">
+          <div class="accuse-hints-drawer-label">
+            <span>Detective Notes — Hints</span>
+            <button class="accuse-hints-drawer-close" onclick="closeAccuseHints()" title="Close hints">✕</button>
+          </div>
+          <div class="accuse-hints-drawer-list" id="accuse-hints-list"></div>
         </div>
         <div class="accuse-trial-footer">
           <button type="button" class="action-btn btn-danger" onclick="abandonAccusationHearing()">✗ Abandon accusation</button>
