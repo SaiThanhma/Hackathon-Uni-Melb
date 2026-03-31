@@ -15,10 +15,12 @@ BASE_URL = "https://api.groq.com/openai/v1"
 #   SETUP_MODEL     — generates the full mystery case (JSON)
 #   CHARACTER_MODEL — powers every suspect's in-character replies
 #   JUDGE_MODEL     — evaluates the player's accusation argument
+#   HINT_MODEL      — reads chat history and generates contextual hints
 # ---------------------------------------------------------------------------
 SETUP_MODEL     = "llama-3.3-70b-versatile"
 CHARACTER_MODEL = "llama-3.3-70b-versatile"
 JUDGE_MODEL     = "llama-3.3-70b-versatile"
+HINT_MODEL      = "llama-3.3-70b-versatile"
 
 # ---------------------------------------------------------------------------
 # Game constants

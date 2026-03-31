@@ -137,9 +137,15 @@ def hint_system_prompt() -> str:
     """System prompt for the hint generation model."""
     return (
         "You are the hint system for a detective mystery game. "
-        "You know the full solution to the case. "
-        "Your job is to give the player ONE hint that helps them make progress, "
-        "scaled to exactly the right level of specificity based on how many hints they have asked for.\n\n"
+        "You know the full solution to the case AND you can see the player's actual interrogation transcripts.\n\n"
+        "Your job is to give the player ONE hint that helps them make progress — "
+        "specifically tailored to what they have already discovered and where they seem stuck.\n\n"
+        "Rules:\n"
+        "- Read the interrogation transcripts carefully. Identify what the player already knows and what they are missing.\n"
+        "- Do NOT repeat information the player has clearly already uncovered.\n"
+        "- Nudge them toward the specific gap in their reasoning — the angle they haven't tried yet.\n"
+        "- Scale specificity to the hint number (instructions provided in the user message).\n"
+        "- Write 1–2 sentences. Address the player as 'you'. Do NOT start with 'Hint:' or a number.\n\n"
         "Return ONLY valid JSON with this schema:\n"
         '{"hint": "string"}\n\n'
         "No markdown fences. No preamble. Just the JSON object."
@@ -149,8 +155,9 @@ def hint_system_prompt() -> str:
 def hint_user_prompt(
     case_data: dict,
     hint_index: int,
+    conversations: dict = None,
 ) -> str:
-    """User prompt for generating the next hint in the sequence."""
+    """User prompt for generating the next hint, including chat history context."""
     solution = case_data["solution"]
     suspects_summary = []
     for s in case_data["suspects"]:
@@ -162,6 +169,33 @@ def hint_user_prompt(
 
     vagueness_instruction = _vagueness_instruction(hint_index)
 
+    # Build a condensed transcript of what the player has actually said and heard
+    transcript_section = ""
+    if conversations:
+        lines = []
+        for suspect_name, convo in conversations.items():
+            turns = [m for m in convo if m.get("role") in ("user", "assistant")]
+            if not turns:
+                continue
+            lines.append(f"\n--- Interrogation of {suspect_name} ---")
+            for m in turns:
+                prefix = "Detective" if m["role"] == "user" else suspect_name
+                content = (m.get("content") or "").strip()
+                # Strip the engine wrapper added in talk route
+                if content.startswith("The player is speaking to you normally."):
+                    # Extract just the player's message
+                    match = __import__("re").search(r"Player message:\n(.+?)\n\nRespond in character", content, __import__("re").DOTALL)
+                    if match:
+                        content = match.group(1).strip()
+                lines.append(f"{prefix}: {content}")
+        if lines:
+            transcript_section = (
+                "\n\nACTUAL INTERROGATION TRANSCRIPTS (what the player has done so far):\n"
+                + "\n".join(lines)
+                + "\n\nUse these transcripts to understand what the player already knows. "
+                "Do NOT hint at things they have already clearly discovered."
+            )
+
     return (
         f'Case: "{case_data["title"]}"\n'
         f"Victim: {case_data['victim']}\n"
@@ -172,11 +206,11 @@ def hint_user_prompt(
         + f"\n\nSolution (SECRET — reveal only partially according to instructions below):\n"
         f"- Culprit: {solution['culprit']}\n"
         f"- Motive: {solution['motive']}\n"
-        f"- Method: {solution['method']}\n\n"
-        f"This is hint #{hint_index + 1} the player has requested.\n\n"
+        f"- Method: {solution['method']}\n"
+        + transcript_section
+        + f"\n\nThis is hint #{hint_index + 1} the player has requested.\n\n"
         f"{vagueness_instruction}\n\n"
-        f"Write a single hint (1–2 sentences). Address the player as 'you'. "
-        f"Do NOT start with 'Hint:' or a number. Just the hint text.\n"
+        f"Based on what the player has (and has NOT) uncovered above, write a targeted hint.\n"
         f'Return JSON: {{"hint": "..."}}'
     )
 
@@ -350,22 +384,42 @@ CONFESSION_ENGINE_MESSAGE = (
 # ---------------------------------------------------------------------------
 
 JUDGE_SYSTEM_PROMPT = (
-    "You are the judge (JUDGE_MODEL) for a detective game. "
+    "You are the judge (JUDGE_MODEL) for a detective mystery game. "
     "You read the transcript of a timed accusation chat: the detective accuses, the accused may defend.\n\n"
-    "Evaluate only the DETECTIVE's statements (all of them together). Ignore theatrics from the accused.\n\n"
+    "Evaluate only the DETECTIVE's statements (all of them together, across all their turns). "
+    "Ignore theatrics, deflections, and denials from the accused.\n\n"
     "Return ONLY valid JSON. No markdown fences. No commentary.\n"
     'Schema: {"player_wins": bool, "correct_culprit": bool, "motive_explained": bool, '
     '"method_explained": bool, "reason": "string"}\n\n'
-    "CRITICAL — player_wins must be FALSE unless all of the following hold:\n"
-    "- correct_culprit: the detective is accusing the real culprit from ground_truth "
-    "(by name or unmistakable reference).\n"
-    "- motive_explained: the detective's words clearly explain WHY the crime happened in a way that "
-    "matches ground_truth motive (not generic 'they had a reason').\n"
-    "- method_explained: the detective's words clearly explain HOW the crime was carried out in a way "
-    "that matches ground_truth method (not 'they did it somehow').\n"
-    "- player_wins: true ONLY if all three booleans above are true.\n\n"
-    "ALWAYS set player_wins to false if the detective only insults, only says 'it\\'s you', 'you did it', "
-    "'I know you\\'re guilty', or names the suspect without tying motive and method to the facts of this case.\n"
-    "Short accusation with no substantive reasoning = player_wins false.\n"
-    "If the detective accused the wrong person, player_wins must be false.\n"
+
+    "## Judging motive_explained\n"
+    "Set to TRUE if the detective demonstrates they understand the CORE REASON behind the crime — "
+    "the essential 'why'. They do NOT need to use the exact wording from ground_truth. "
+    "A paraphrase, partial description, or reasonable interpretation of the motive counts as SUFFICIENT "
+    "as long as the essential driver is clearly present. "
+    "Example: ground_truth motive = 'desperate to cover up embezzlement'; "
+    "detective says 'you needed him dead because he discovered your financial fraud' → TRUE.\n\n"
+
+    "## Judging method_explained\n"
+    "Set to TRUE if the detective demonstrates they understand HOW the crime was carried out — "
+    "the essential 'how'. Paraphrases and partial descriptions count. "
+    "Minor inaccuracies about incidental details (exact weapon model, precise location, exact time) "
+    "do NOT disqualify the explanation — only the core mechanism matters. "
+    "Example: ground_truth method = 'poisoned the wine glass during dinner'; "
+    "detective says 'you put poison in his drink' → TRUE.\n\n"
+
+    "## Judging correct_culprit\n"
+    "Set to TRUE if the detective is clearly accusing the person named in ground_truth culprit "
+    "(by name, or by unmistakable description that could only mean that person).\n\n"
+
+    "## player_wins\n"
+    "Set to TRUE if and only if ALL THREE of correct_culprit, motive_explained, and method_explained are TRUE, "
+    "AND the accusation shows genuine reasoning beyond a bare one-line charge.\n\n"
+
+    "ALWAYS set player_wins to FALSE if:\n"
+    "- The detective only insults or makes bare statements ('it's you', 'you did it', 'I know you're guilty').\n"
+    "- The detective accused the wrong person.\n"
+    "- The explanation of motive or method is completely absent or totally contradicts the ground_truth.\n"
+    "When the player clearly understands the core truth but expresses it imperfectly or incompletely, "
+    "rule in their favour — the goal is to reward genuine detective work, not perfect recitation.\n"
 )

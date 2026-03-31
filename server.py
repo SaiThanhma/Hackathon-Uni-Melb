@@ -376,7 +376,7 @@ def hint():
         return jsonify({"exhausted": True})
 
     try:
-        hint_text = build_hint(client, case_data, hint_index)
+        hint_text = build_hint(client, case_data, hint_index, session["conversations"])
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

@@ -15,6 +15,7 @@ from openai import OpenAI
 from config import (
     ACCUSATION_SECONDS,
     CHARACTER_MODEL,
+    HINT_MODEL,
     JUDGE_MODEL,
     N_PLAYER,
     SETUP_MODEL,
@@ -274,18 +275,19 @@ def build_hint(
     client: OpenAI,
     case_data: Dict[str, Any],
     hint_index: int,
+    conversations: Optional[Dict[str, List[Dict[str, str]]]] = None,
 ) -> Optional[str]:
-    """Generate the next hint via AI. Returns None if hints are exhausted."""
+    """Generate the next hint via a dedicated hint LLM that reads the chat history."""
     total = hint_total_for_case(case_data)
     if hint_index < 0 or hint_index >= total:
         return None
 
     messages = [
         {"role": "system", "content": hint_system_prompt()},
-        {"role": "user",   "content": hint_user_prompt(case_data, hint_index)},
+        {"role": "user",   "content": hint_user_prompt(case_data, hint_index, conversations)},
     ]
     response = client.chat.completions.create(
-        model=SETUP_MODEL, messages=messages, temperature=0.7,
+        model=HINT_MODEL, messages=messages, temperature=0.7,
     )
     raw = response.choices[0].message.content.strip()
     parsed = safe_json_loads(raw)

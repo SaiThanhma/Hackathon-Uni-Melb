@@ -82,7 +82,9 @@ function updateMusicDockUI() {
     btn.title = music.muted ? 'Unmute music' : 'Mute music';
   }
   if (slider) {
-    slider.value = String(music.volume);
+    // Display the perceptual slider position (inverse of the power curve),
+    // not the raw linear volume, so the knob sits where the user left it.
+    slider.value = String(_volumeToSliderPos(music.volume));
   }
 }
 
@@ -156,11 +158,23 @@ function toggleMusicMute() {
   updateMusicDockUI();
 }
 
-function setMusicVolumeFromSlider(value01) {
-  music.volume = Math.max(0, Math.min(1, value01));
+function setMusicVolumeFromSlider(sliderPos) {
+  // Convert linear slider position (0–1) to perceptual volume using a power curve.
+  // Human hearing is logarithmic: equal slider steps should feel equal in loudness.
+  // v = pos^2.5 gives a smooth, perceptually-linear curve from silence to full volume.
+  const pos = Math.max(0, Math.min(1, sliderPos));
+  music.volume = Math.pow(pos, 2.5);
   applyMusicOutput();
   saveMusicPrefs();
-  updateMusicDockUI();
+  // Don't call updateMusicDockUI here — it would overwrite the slider position
+  // with the raw volume value. The slider already shows the correct position.
+}
+
+/** Convert stored linear volume back to slider position for display. */
+function _volumeToSliderPos(volume) {
+  if (volume <= 0) return 0;
+  if (volume >= 1) return 1;
+  return Math.pow(volume, 1 / 2.5);
 }
 
 function wireMusicControls() {
@@ -820,14 +834,67 @@ function buildHintPanelMsg(text, index) {
   return div;
 }
 
+/** Type a single hint bubble into the hints panel, character by character. */
+function typeHintMsg(box, text, index) {
+  const el = document.createElement('div');
+  el.className = 'msg hint';
+  const label = document.createElement('div');
+  label.className = 'msg-label';
+  label.textContent = `Hint ${index}`;
+  const bubble = document.createElement('div');
+  bubble.className = 'msg-bubble';
+  el.appendChild(label);
+  el.appendChild(bubble);
+  box.appendChild(el);
+  box.scrollTop = box.scrollHeight;
+
+  const _typeCfg = (typeof UI_CONFIG !== 'undefined') ? UI_CONFIG.animation : {};
+  const _threshold   = _typeCfg.typingLongReplyThreshold || 300;
+  const _charsNormal = _typeCfg.typingCharsPerSecNormal   || 38;
+  const _charsFast   = _typeCfg.typingCharsPerSecFast     || 55;
+  const CHARS_PER_SEC = text.length > _threshold ? _charsFast : _charsNormal;
+  const INTERVAL_MS = 1000 / CHARS_PER_SEC;
+
+  return new Promise(resolve => {
+    let i = 0;
+    const cursor = document.createElement('span');
+    cursor.className = 'typing-cursor';
+    cursor.textContent = '▍';
+    bubble.appendChild(cursor);
+
+    const tick = setInterval(() => {
+      if (i < text.length) {
+        cursor.insertAdjacentText('beforebegin', text[i]);
+        i++;
+        box.scrollTop = box.scrollHeight;
+      } else {
+        clearInterval(tick);
+        cursor.remove();
+        resolve();
+      }
+    }, INTERVAL_MS);
+  });
+}
+
 function renderHintPanel() {
   const box = document.getElementById('hint-transcript');
   if (!box) return;
-  box.innerHTML = '';
-  hintLog.forEach((text, i) => {
-    box.appendChild(buildHintPanelMsg(text, i + 1));
-  });
-  box.scrollTop = box.scrollHeight;
+
+  const renderedCount = box.querySelectorAll('.msg.hint').length;
+
+  // Already rendered all hints — nothing to do (e.g. tab switch)
+  if (renderedCount >= hintLog.length) {
+    box.scrollTop = box.scrollHeight;
+    return;
+  }
+
+  // Render any previously unrendered hints instantly (e.g. after a page restore)
+  for (let i = renderedCount; i < hintLog.length - 1; i++) {
+    box.appendChild(buildHintPanelMsg(hintLog[i], i + 1));
+  }
+
+  // Type the newest hint with the typewriter effect
+  typeHintMsg(box, hintLog[hintLog.length - 1], hintLog.length);
 }
 
 function _populateAccuseHintsList() {
