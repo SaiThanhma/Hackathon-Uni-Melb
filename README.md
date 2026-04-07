@@ -56,6 +56,7 @@ Drop `.mp3` / `.ogg` / `.wav` files into a `music/` folder next to `server.py`. 
 | `SETUP_MODEL` | `llama-3.3-70b-versatile` | Generates the case JSON |
 | `CHARACTER_MODEL` | `llama-3.3-70b-versatile` | Powers suspect dialogue |
 | `JUDGE_MODEL` | `llama-3.3-70b-versatile` | Evaluates accusation arguments |
+| `HINT_MODEL` | `llama-3.3-70b-versatile` | Generates progressive hints |
 | `N_PLAYER` | `3` | Default suspect count |
 | `ACCUSATION_SECONDS` | `90` | Duration of the hearing |
 
@@ -75,7 +76,7 @@ All prompts live in `prompts.py`. Edit tone, difficulty instructions, or judge c
 
 ## Architecture
 
-The game utilizes a multi-agent orchestration of three LLM.
+The game utilizes a multi-agent orchestration of four LLMs.
 
 ### 1. The Architect (`SETUP_MODEL`)
 * **Purpose**: Generates the entire mystery universe—including setting, victim, and crime—as a structured JSON object.
@@ -91,6 +92,11 @@ The game utilizes a multi-agent orchestration of three LLM.
 * **Purpose**: Evaluates the 90-second "Accusation Hearing" against the ground truth.
 * **Win Criteria**: The Judge grants a win only if the player correctly identifies the culprit and provides a substantive explanation of both **motive** and **method**.
 * **Anti-Trivialization**: Automatically rejects "lazy" accusations (e.g., "It was you!") that lack case-specific details or fail to meet minimum character/keyword thresholds.
+
+### 4. The Oracle (`HINT_MODEL`)
+* **Purpose**: Generates progressive, context-aware hints when the player is stuck.
+* **Chat-Aware**: Reads the full interrogation history before producing a hint, so clues are tailored to what the player has already discovered.
+* **Progressive Disclosure**: Hints escalate in specificity across a fixed budget (vague tip → relevant role → motive → method → culprit name), scaled to the chosen difficulty.
 
 ---
 
